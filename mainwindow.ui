@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>447</width>
-    <height>349</height>
+    <width>772</width>
+    <height>417</height>
    </rect>
   </property>
   <property name="font">
@@ -26,6 +26,13 @@
        <widget class="QPushButton" name="pushButtonTasks">
         <property name="text">
          <string>Управление задачами</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>PushButton</string>
         </property>
        </widget>
       </item>
@@ -129,7 +136,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>447</width>
+     <width>772</width>
      <height>30</height>
     </rect>
    </property>

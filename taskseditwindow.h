@@ -1,6 +1,7 @@
 #ifndef TASKSEDITWINDOW_H
 #define TASKSEDITWINDOW_H
 
+
 #pragma once
 
 #include <QObject>

@@ -1,7 +1,5 @@
 #include "jsonconverter.h"
 
-/* Не сох */
-
 JSONConverter::JSONConverter()
 {
 

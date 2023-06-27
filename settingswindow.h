@@ -1,6 +1,7 @@
 #ifndef SETTINGSWINDOW_H
 #define SETTINGSWINDOW_H
 
+
 #pragma once
 
 #include <QObject>

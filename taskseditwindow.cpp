@@ -1,6 +1,7 @@
 #include "taskseditwindow.h"
 #include "ui_taskseditwindow.h"
 
+
 void TasksEditWindow::closeEvent(QCloseEvent *event)
 {
     emit showParentWindow();

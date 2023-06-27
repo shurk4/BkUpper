@@ -1,5 +1,6 @@
 #include "engine.h"
 
+
 Engine::Engine(QString _sourceDir, QString _destinationDir)
     : sourceDir(_sourceDir), destinationDir(_destinationDir)
 {
