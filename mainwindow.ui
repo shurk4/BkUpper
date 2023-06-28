@@ -30,9 +30,16 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pushButtonShedulerRestart">
         <property name="text">
-         <string>PushButton</string>
+         <string>Перезапустить планировщик</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonShedulerStop">
+        <property name="text">
+         <string>Остановить планировщик</string>
         </property>
        </widget>
       </item>
@@ -89,6 +96,13 @@
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QPushButton" name="pushButton">
+           <property name="text">
+            <string>PushButton</string>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="pushButtonRunThread">
            <property name="text">

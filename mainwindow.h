@@ -17,6 +17,7 @@
 #include "jsonconverter.h"
 #include "extras.h"
 #include "engine.h"
+#include "sheduler.h"
 
 #include "taskseditwindow.h"
 #include "settingswindow.h"
@@ -38,6 +39,7 @@ class MainWindow : public QMainWindow
     bool startMinimized = false;
     bool closeToTray = false;
 
+    bool shedulerStarted = false;
     bool forceClose = false;
 
     SettingsWindow *settingsWindow;
@@ -52,6 +54,7 @@ public:
     void applyConfig();
     void iconActivate();
     void settingWindowStart();
+    void restartSheduler();
 
 protected:
     /* Виртуальная функция родительского класса в нашем классе
@@ -88,11 +91,18 @@ private slots:
 
     void on_pushButtonSendToThread_clicked();
 
+    void on_pushButtonShedulerRestart_clicked();
+
+    void on_pushButtonShedulerStop_clicked();
+
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
 signals: // отправка данных
     void sendData(JSONConverter);
+    void sendTasks(json);
     void sendMessage(QString);
 
 public slots: // Приём данных

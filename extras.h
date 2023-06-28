@@ -16,6 +16,8 @@ public:
     extras();
 
     void static showTasksList(QListWidget *_widget, json const _tasks);
+    int static dayToInt(std::string const _day);
+    int static monthToInt(std::string const _month);
 };
 
 #endif // EXTRAS_H

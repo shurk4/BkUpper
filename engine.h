@@ -32,7 +32,6 @@ public:
     void doWork();
 
     // QRunnable interface
-public:
     void run();
 
 signals:

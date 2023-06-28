@@ -278,7 +278,7 @@ void TasksEditWindow::on_pushButtonSave_clicked()
 void TasksEditWindow::on_radioButtonDaily_clicked()
 {
     hideWidgets();
-    task["repeat"] = "dayli";
+    task["repeat"] = "daily";
 }
 
 void TasksEditWindow::on_radioButtonWeekly_clicked()

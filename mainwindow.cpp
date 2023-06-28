@@ -4,6 +4,10 @@
 /* !Запуск по расписанию - сделано в Engine::doWork()
  *
  * запустить копирование в потоках
+ *  -проверить обработку ежедневных задачь
+ *  -сделать таймер(включение задачи по времени)
+ *  -проверить таймер
+ *
  * привести в порядок MainWindow
  * сделать вывод процентов копирования и лога(если system активен)
  *
@@ -141,6 +145,26 @@ void MainWindow::settingWindowStart()
     emit sendData(configData);
 }
 
+void MainWindow::restartSheduler()
+{
+    if(shedulerStarted)
+    {
+        emit sendTasks(configData.getFullTasks());
+    }
+    else
+    {
+        Sheduler *sheduler = new Sheduler;
+
+        connect(sheduler, &Sheduler::send, this, &MainWindow::recive);
+        connect(this, &MainWindow::sendMessage, sheduler, &Sheduler::recive);
+        connect(this, &MainWindow::sendTasks, sheduler, &Sheduler::reciveTasks);
+
+        QThreadPool::globalInstance()->start(sheduler);
+        emit sendTasks(configData.getFullTasks());
+        shedulerStarted = true;
+    }
+}
+
 void MainWindow::reciveData(JSONConverter _data)
 {
 //    QMessageBox::information(this, "Полученная информация", _data.getAllData());
@@ -251,3 +275,20 @@ void MainWindow::on_pushButtonSendToThread_clicked()
 {
     emit sendMessage(ui->textEditLog->toPlainText());
 }
+
+void MainWindow::on_pushButtonShedulerRestart_clicked()
+{
+    restartSheduler();
+}
+
+void MainWindow::on_pushButtonShedulerStop_clicked()
+{
+    emit sendMessage("stop");
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    QMessageBox::information(this, "!", QDate::longDayName(QDate::currentDate().dayOfWeek()));
+}
+
