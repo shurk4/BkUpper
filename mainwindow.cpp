@@ -1,19 +1,16 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
-/* !Запуск по расписанию - сделано в Engine::doWork()
- *  -доработать обработку данных перед отправкой в задачу
+/*
+ * Типы сообщений taskMessage
  *
  * запустить копирование в потоках
- *  -проверить обработку ежедневных задачь
- *  -сделать таймер(включение задачи по времени)
- *  -проверить таймер
  *
  * привести в порядок MainWindow
  * сделать вывод процентов копирования и лога(если system активен)
+ * Закрывать потоки при выходе из программы
  *
  * сделать автозагрузку
- *
 */
 
 MainWindow::MainWindow(QWidget *parent)
@@ -35,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     configData.writeConfig();
+    emit send(taskMessage("all", "stop"));
     delete ui;
 }
 
@@ -157,7 +155,7 @@ void MainWindow::restartSheduler()
         Sheduler *sheduler = new Sheduler;
 
         connect(sheduler, &Sheduler::send, this, &MainWindow::recive);
-        connect(this, &MainWindow::sendMessage, sheduler, &Sheduler::recive);
+        connect(this, &MainWindow::send, sheduler, &Sheduler::recive);
         connect(this, &MainWindow::sendTasks, sheduler, &Sheduler::reciveTasks);
 
         QThreadPool::globalInstance()->start(sheduler);
@@ -168,15 +166,14 @@ void MainWindow::restartSheduler()
 
 void MainWindow::reciveData(JSONConverter _data)
 {
-//    QMessageBox::information(this, "Полученная информация", _data.getAllData());
     configData = _data;
     configData.writeConfig();
     extras::showTasksList(ui->listWidget, configData.getFullTasks());
 }
 
-void MainWindow::recive(QString _recive)
+void MainWindow::recive(taskMessage message)
 {
-    ui->textEditTask->insertPlainText("Recived message:" +_recive);
+    ui->textEditTask->insertPlainText(message.name + ": " + message.message + "\n");
 }
 
 void MainWindow::showWindow()
@@ -223,8 +220,7 @@ void MainWindow::on_pushButtonTasksShow_clicked()
 
 void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
 {
-    json tempJson = configData.getFullTasks();
-    ui->textEditTask->setText(QString::fromStdString(tempJson[item->text().toStdString()].dump(4)));
+
 }
 
 void MainWindow::on_pushButtonSystem_clicked()
@@ -261,35 +257,31 @@ void MainWindow::on_actionTray_triggered()
 
 void MainWindow::on_pushButtonRunThread_clicked()
 {
-    tasksMap["task 1"] = new Engine("string1", "str2");
+//    tasksMap["task 1"] = new Engine("string1", "str2");
 
-    connect(tasksMap["task 1"], &Engine::sendMessage, this, &MainWindow::recive);
-    connect(this, &MainWindow::sendMessage, tasksMap["task 1"], &Engine::recive);
+//    connect(tasksMap["task 1"], &Engine::sendMessage, this, &MainWindow::recive);
+//    connect(this, &MainWindow::sendMessage, tasksMap["task 1"], &Engine::recive);
 
-    QThreadPool::globalInstance()->start(tasksMap["task 1"]);
+//    QThreadPool::globalInstance()->start(tasksMap["task 1"]);
 
-    ui->textEditTask->clear();
-    emit sendMessage("Test message");
+//    ui->textEditTask->clear();
+//    emit sendMessage("Test message");
 }
 
 void MainWindow::on_pushButtonSendToThread_clicked()
 {
-    emit sendMessage(ui->textEditLog->toPlainText());
+
 }
 
 void MainWindow::on_pushButtonShedulerRestart_clicked()
 {
+    qDebug() << "MainWindow thread id: " << QThread::currentThreadId();
+    ui->textEditTask->insertPlainText("Restart sheduler\n");
     restartSheduler();
 }
 
 void MainWindow::on_pushButtonShedulerStop_clicked()
 {
-    emit sendMessage("stop");
+    emit send(taskMessage("all", "stop"));
+    shedulerStarted = false;
 }
-
-
-void MainWindow::on_pushButton_clicked()
-{
-    QMessageBox::information(this, "!", QDate::longDayName(QDate::currentDate().dayOfWeek()));
-}
-

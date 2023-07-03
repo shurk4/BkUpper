@@ -1,10 +1,10 @@
 #include "engine.h"
 
 
-Engine::Engine(QString _sourceDir, QString _destinationDir)
-    : sourceDir(_sourceDir), destinationDir(_destinationDir)
+Engine::Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum)
+    : sourceDir(_sourceDir), destinationDir(_destinationDir), taskName(_taskName), copyNum(_copyNum)
 {
-
+    prepareMessage("Запущена");
 }
 
 Engine::~Engine()
@@ -12,41 +12,58 @@ Engine::~Engine()
     deleteLater();
 }
 
+void Engine::prepareMessage(QString message)
+{
+    emit sendMessage(taskMessage(taskName, message + "\n"));
+
+}
+
 void Engine::doWork()
 {
-    qDebug() << "Started thread" << QThread::currentThreadId();
-    emit sendMessage("Started thread");
+    prepareMessage("Начинает работу");
+    prepareMessage("Путь источник: " + sourceDir.absolutePath() + "\n");
+    prepareMessage("Путь назначения: " + destinationDir.absolutePath() + "\n");
 
+    destDirCreate();
+}
 
-    // Запуск по расписанию
-    QTime taskTime(20, 00);
-    while(QTime::currentTime() < taskTime)
+void Engine::destDirCreate()
+{
+    prepareMessage("preparing the destination folder");
+
+    if(!destinationDir.exists())
     {
-        qDebug() << "Waiting to time" << QThread::currentThreadId();
-        emit sendMessage("Waiting to time");
-        QThread::sleep(5);
-    }
+        prepareMessage("Destination folder not exist!");
 
-    for(int i = 0; i < 10; i++)
-    {
-        qDebug() << "Work in process" << QThread::currentThreadId();
-        emit sendMessage("Work is process");
-        QThread::sleep(1);
+        QDir().mkdir(destinationDir.absolutePath());
+
+        if(destinationDir.exists())
+        {
+            prepareMessage("Destination folder is created!");
+        }
+        else
+        {
+            prepareMessage("ERROR! Could not create destinaion folder!");
+        }
     }
-    qDebug() << "Work is finished";
-    emit sendMessage("Work is finished");
+    else
+    {
+        prepareMessage("Destination folder is exist!");
+    }
 }
 
 void Engine::run()
 {
-    _sleep(100);
     doWork();
+    if(forceStop) QThread::currentThread()->quit();
 }
 
-void Engine::recive(QString _recive)
+void Engine::recive(taskMessage _recive)
 {
-    QString temp = "Thread recive message: ";
-    temp += _recive + "\n";
-    qDebug() << temp;
-    emit sendMessage(temp);
+    if(_recive.name == taskName)
+    {
+        prepareMessage("Task recive message with name: " + _recive.name);
+    }
+    if(_recive.message == "stop") forceStop = true;
+    prepareMessage("Task: is stopped!\n");
 }

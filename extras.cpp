@@ -1,10 +1,7 @@
 #include "extras.h"
 
 
-extras::extras()
-{
-
-}
+extras::extras(){}
 
 void extras::showTasksList(QListWidget *_widget, const json _tasks)
 {
@@ -44,4 +41,34 @@ int extras::monthToInt(const std::string _month)
     else if(_month == "november") return 11;
     else if(_month == "decembr") return 12;
     else return 0;
+}
+
+bool extras::itsName(QString &_recivedMessage)
+{
+    if(_recivedMessage.contains("name:"))
+    {
+        _recivedMessage.remove("name:");
+        return true;
+    }
+    return false;
+}
+
+bool extras::itsTime(QString &_recivedMessage)
+{
+    if(_recivedMessage.contains("time"))
+    {
+        _recivedMessage.remove("time:");
+        return true;
+    }
+    return false;
+}
+
+taskMessage::taskMessage()
+{
+
+}
+
+taskMessage::taskMessage(QString _name, QString _message) : name(_name), message(_message)
+{
+
 }

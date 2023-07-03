@@ -97,13 +97,6 @@
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="QPushButton" name="pushButton">
-           <property name="text">
-            <string>PushButton</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QPushButton" name="pushButtonRunThread">
            <property name="text">
             <string>Запустить поток</string>
@@ -151,7 +144,7 @@
      <x>0</x>
      <y>0</y>
      <width>772</width>
-     <height>30</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

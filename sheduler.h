@@ -12,8 +12,9 @@
 #include <QTime>
 #include <string>
 
-#include <jsonconverter.h>
-#include <extras.h>
+#include "jsonconverter.h"
+#include "extras.h"
+#include "engine.h"
 
 //struct task
 //{
@@ -33,19 +34,28 @@ class Sheduler : public QObject, public QRunnable
     bool tasksUpdated = false;
     json tasks;
     QMultiMap<QTime, QString> todayTasks;
+    QMultiMap<QString, QTime> tasksInWork;
 
 public:
     Sheduler();
+    ~Sheduler();
 
-    void tasksUpdate();
-    void run();
+    void tasksUpdate(); // Составляет список задач на сегодня
+    void run(); // метод действия в потоке
+    void runTasks(); // Запустить задачи из списка tasksInWork
+
+    bool currentTask(); // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
+
+    void prepareMessage(QString _message);
 
 signals:
-    void send(QString);
+    void send(taskMessage); // Отправка сообщения родительскому окну
+    void sendToTask(taskMessage); // Отправка сообщения задаче
 
 public slots:
-    void recive(QString _recive);
-    void reciveTasks(json _tasks);
+    void recive(taskMessage _recive); // Приём сообщения от родительского окна
+    void reciveFromTask(taskMessage _recive); // Приём сообщения от запущеной задачи и отправка в родительское окно
+    void reciveTasks(json _tasks); // Приём списка задачь с последующей обработкой
 };
 
 #endif // SHEDULER_H

@@ -12,6 +12,7 @@
 #include <QSystemTrayIcon>
 #include <QStyle>
 #include <QAction>
+#include <QTextStream>
 #include <map>
 
 #include "jsonconverter.h"
@@ -95,19 +96,17 @@ private slots:
 
     void on_pushButtonShedulerStop_clicked();
 
-    void on_pushButton_clicked();
-
 private:
     Ui::MainWindow *ui;
 
 signals: // отправка данных
     void sendData(JSONConverter);
     void sendTasks(json);
-    void sendMessage(QString);
+    void send(taskMessage);
 
 public slots: // Приём данных
     void reciveData(JSONConverter _data);
-    void recive(QString _recive);
+    void recive(taskMessage message);
     void showWindow();
 };
 #endif // MAINWINDOW_H
