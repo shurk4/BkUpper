@@ -4,13 +4,21 @@
 /*
  * Типы сообщений taskMessage
  *
- * запустить копирование в потоках
+ * лог копирования(удалил при переносе функций)
+ * сохранение лога в папку с копиями(имя лога: имя задачи_log.txt)
+ * добавить точки выхода из потока при копировании(при выходе сохранять лог и указывать что задача была прервана)
+ * записывать в config.json время последнего запуска и окончания задачи
+ * Добавить определение объёма копии
+ *
+ * поведение при условии хранения только одной копии
  *
  * привести в порядок MainWindow
  * сделать вывод процентов копирования и лога(если system активен)
  * Закрывать потоки при выходе из программы
  *
  * сделать автозагрузку
+ * архивировать копии?
+ * отправка сообщений
 */
 
 MainWindow::MainWindow(QWidget *parent)
@@ -174,6 +182,9 @@ void MainWindow::reciveData(JSONConverter _data)
 void MainWindow::recive(taskMessage message)
 {
     ui->textEditTask->insertPlainText(message.name + ": " + message.message + "\n");
+//    QTextCursor cursor = ui->textEditTask->textCursor();
+//    cursor.movePosition(QTextCursor::End);
+//    ui->textEditTask->setTextCursor(cursor);
 }
 
 void MainWindow::showWindow()

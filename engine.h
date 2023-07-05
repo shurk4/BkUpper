@@ -30,7 +30,7 @@ class Engine : public QObject, public QRunnable
 
 public:
     Engine();
-    Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum = 0);
+    Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum = 1);
     ~Engine();
 
     void writeLog();
@@ -40,22 +40,23 @@ public:
 
     // проверка и создание каталога назначения
     void destDirCreate();
+
     // проверяет путь patch на наличие первой копии dir.
     // проверяет количество копий и если оно равное copyNum удаляет самую старую
     // Переименовывает копии для освобождения имени для текущей копии
     // Создаёт папку с именем copyName + 0 для текущей копии
     // принимает путь к первой копии bu0, путь расположения копий, количество копий
     //void optimizeFolders(QString &patch, QDir &dir, QString copyName, int &copyNum);
-    void optimizeFolders(QDir &destinationDir, QString copyName, int &copyNum, std::string &log);
+    void optimizeFolders();
 
     // функция создаёт копию каталога по указанному пути
-    void createFolder(QDir &sourceDir, QDir &destinationDir, std::string &log);
+    void createFolder(QDir _entryDir, QDir _targetDir);
+
+    // функция просматривает каталоги по указанному пути и создаёт их копии - рекурсивный метод
+    void listEntriesDir(QDir _entryDir, QDir _targetDir);
 
     // функция просматривает файлы в указанном каталоге и запускает их копирование
-    void listEntriesFiles(QDir inSourceDir, QDir inDestinationDir, std::string &log);
-
-    // функция просматривает каталоги по указанному пути и создаёт их копии
-    void listEntriesDir(QDir inSourceDir, QDir inDestionationDir, std::string &log);
+    void listEntriesFiles(QDir _entryDir, QDir _targetDir);
 
     // QRunnable interface
     void run();

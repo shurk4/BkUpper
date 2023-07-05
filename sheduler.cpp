@@ -140,15 +140,15 @@ void Sheduler::run()
 
         qDebug() << ".";
 
-        // Если был обновлён список задачь
+        // Если был обновлён список задач
         if(tasksUpdated)
         {
             tasksUpdate();
             tasksUpdated = false;
         }
 
-        //Если пришло вреся выполнения задачь
-        if(currentTask())
+        //Если пришло время выполнения задач
+        if(isTodayTask())
         {
             runTasks();
         }
@@ -167,11 +167,10 @@ void Sheduler::runTasks()
     {
         qDebug() << "Task " << it.key() << " starting...!!!\n";
         prepareMessage("Task " + it.key() + " starting...!!!\n");
-        emit send(taskMessage("sheduler", "Task " + it.key() + " starting...!!!\n"));
 
         QString sourcePath = QString::fromStdString(tasks[it.key().toStdString()]["sourcePath"]);
         QString destPath = QString::fromStdString(tasks[it.key().toStdString()]["destPath"]);
-        Engine *task = new Engine(sourcePath, destPath, it.key(), 2);
+        Engine *task = new Engine(sourcePath, destPath, it.key(), 3);
 
         connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
         connect(this, &Sheduler::send, task, &Engine::recive);
@@ -181,7 +180,7 @@ void Sheduler::runTasks()
 }
 
 // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
-bool Sheduler::currentTask()
+bool Sheduler::isTodayTask()
 {
     if(todayTasks.begin().key() <= QTime::currentTime())
     {
@@ -195,9 +194,9 @@ bool Sheduler::currentTask()
                 todayTasks.remove(it.key(), it.value());
             }
         }
-        if(tasksInWork.empty()) return false;
-        else return true;
+        if(!tasksInWork.empty()) return true;
     }
+    return false;
 }
 
 void Sheduler::prepareMessage(QString _message)

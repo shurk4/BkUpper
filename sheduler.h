@@ -44,7 +44,7 @@ public:
     void run(); // метод действия в потоке
     void runTasks(); // Запустить задачи из списка tasksInWork
 
-    bool currentTask(); // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
+    bool isTodayTask(); // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
 
     void prepareMessage(QString _message);
 
