@@ -24,7 +24,7 @@ Sheduler::Sheduler(){}
 
 Sheduler::~Sheduler()
 {
-    prepareMessage("is stoped!");
+//    prepareMessage("is stoped!");
     this->deleteLater();
 }
 
@@ -106,16 +106,16 @@ void Sheduler::tasksUpdate()
        // Если задача прошла все условия и должна выполняться сегодня, добавляем её в спиок todayTasks
        if(todayTask)
        {
-           prepareMessage(QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
+           prepareMessage( TypeMessage::INFORMATION, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
 
-           taskMessage("sheduler", QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
+           taskMessage("sheduler", TypeMessage::INFORMATION, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
 
            QTime taskTime = QTime::fromString(QString::fromStdString(taskJson["time"]));
            todayTasks.insert(taskTime, QString::fromStdString(i.key()));
        }
     }
 
-    taskMessage message("sheduler", "\n\n---=== Задачи дня\n");
+    taskMessage message("sheduler", TypeMessage::INFORMATION, "\n\n---=== Задачи дня\n");
 
     for(auto it = todayTasks.begin(); it != todayTasks.end(); it++)
     {
@@ -128,7 +128,7 @@ void Sheduler::tasksUpdate()
 void Sheduler::run()
 {
     qDebug() << "Sheduler is started in thread with id: " << QThread::currentThreadId() << "\n";
-    emit send(taskMessage("sheduler", "Sheduler is started\n"));
+    emit send(taskMessage("sheduler", TypeMessage::INFORMATION, "Sheduler is started\n"));
     while(true)
     {
         // Если прислан сигнал остановки потока
@@ -156,27 +156,8 @@ void Sheduler::run()
     }
 
     qDebug() << "Sheduler stoped\n";
-    emit send(taskMessage("sheduler", "Sheduler stoped\n"));
+    emit send(taskMessage("sheduler", TypeMessage::INFORMATION, "Sheduler stoped\n"));
     QThread::currentThread()->quit();
-}
-
-// Запустить задачи из списка tasksInWork
-void Sheduler::runTasks()
-{
-    for(auto it = tasksInWork.begin(); it != tasksInWork.end(); it++)
-    {
-        qDebug() << "Task " << it.key() << " starting...!!!\n";
-        prepareMessage("Task " + it.key() + " starting...!!!\n");
-
-        QString sourcePath = QString::fromStdString(tasks[it.key().toStdString()]["sourcePath"]);
-        QString destPath = QString::fromStdString(tasks[it.key().toStdString()]["destPath"]);
-        Engine *task = new Engine(sourcePath, destPath, it.key(), 3);
-
-        connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
-        connect(this, &Sheduler::send, task, &Engine::recive);
-
-        QThreadPool::globalInstance()->start(task);
-    }
 }
 
 // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
@@ -199,9 +180,34 @@ bool Sheduler::isTodayTask()
     return false;
 }
 
-void Sheduler::prepareMessage(QString _message)
+// Запустить задачи из списка tasksInWork
+void Sheduler::runTasks()
 {
-    emit send(taskMessage("sheduler", _message));
+    for(auto it = tasksInWork.begin(); it != tasksInWork.end(); it++)
+    {
+        qDebug() << "Task " << it.key() << " starting...!!!\n";
+        prepareMessage(TypeMessage::INFORMATION, "Task " + it.key() + " starting...!!!\n");
+        json currentTask = tasks[it.key().toStdString()];
+
+        QString sourcePath = QString::fromStdString(currentTask["sourcePath"]);
+        QString destPath = QString::fromStdString(currentTask["destPath"]);
+        int copiesNum = 0;
+        if(currentTask["type"] == "Копия")
+        {
+            copiesNum = currentTask["copiesNum"];
+        }
+        Engine *task = new Engine(sourcePath, destPath, it.key(), copiesNum);
+
+        connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
+        connect(this, &Sheduler::send, task, &Engine::recive);
+
+        QThreadPool::globalInstance()->start(task);
+    }
+}
+
+void Sheduler::prepareMessage(TypeMessage _type, QString _message)
+{
+    emit send(taskMessage("sheduler", _type , _message));
 }
 
 // Приём сообщения от родительского окна
@@ -211,7 +217,7 @@ void Sheduler::recive(taskMessage _recive)
     if(_recive.message == "stop")
     {
 //        prepareMessage("Stop signal recived!");
-        taskMessage("sheduler", "Stop signal recived!");
+        taskMessage("sheduler", TypeMessage::INFORMATION, "Stop signal recived!");
         emit sendToTask(_recive);
         forceStop = true;
 
@@ -222,7 +228,7 @@ void Sheduler::recive(taskMessage _recive)
     temp += "\n";
     qDebug() << temp;
 //    prepareMessage(temp);
-    taskMessage("sheduler", temp);
+    taskMessage("sheduler",TypeMessage::INFORMATION, temp);
 }
 
 // Приём сообщения от запущеной задачи и отправка в родительское окно
@@ -236,7 +242,7 @@ void Sheduler::reciveTasks(json _tasks)
 {
     tasks = _tasks;
     tasksUpdated = true;
-    prepareMessage("Task updated\n");
+    prepareMessage(TypeMessage::INFORMATION, "Task updated\n");
 
-    taskMessage("sheduler", "Task updated\n");
+    taskMessage("sheduler", TypeMessage::INFORMATION, "Task updated\n");
 }

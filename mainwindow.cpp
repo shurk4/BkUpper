@@ -7,7 +7,7 @@
  * лог копирования(удалил при переносе функций)
  * сохранение лога в папку с копиями(имя лога: имя задачи_log.txt)
  * добавить точки выхода из потока при копировании(при выходе сохранять лог и указывать что задача была прервана)
- * записывать в config.json время последнего запуска и окончания задачи
+ * записывать в config.json время последнего запуска и окончания задачи - сделано!
  * Добавить определение объёма копии
  *
  * поведение при условии хранения только одной копии
@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     applyConfig();
-    ui->textEditLog->insertPlainText(configData.getAllData());
 
     iconActivate();
 
@@ -40,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     configData.writeConfig();
-    emit send(taskMessage("all", "stop"));
+    emit send(taskMessage("all", TypeMessage::ABORTED, "stop"));
     delete ui;
 }
 
@@ -181,10 +180,35 @@ void MainWindow::reciveData(JSONConverter _data)
 
 void MainWindow::recive(taskMessage message)
 {
-    ui->textEditTask->insertPlainText(message.name + ": " + message.message + "\n");
-//    QTextCursor cursor = ui->textEditTask->textCursor();
-//    cursor.movePosition(QTextCursor::End);
-//    ui->textEditTask->setTextCursor(cursor);
+    // Запись времени начала последнего выполнения задания
+    if(message.type == START)
+    {
+        json task = configData.getTask(message.name);
+        task["lastStartTime"] = QDateTime::currentDateTime().toString(timeFormat).toStdString();
+        configData.setTask(message.name, task);
+//        QDateTime::toTime_t(); // Время в сеундах от начала эпохи
+    }
+
+    // Запись времени окончания последнего выполнения задания
+    if(message.type == COMPLITE)
+    {
+        json task = configData.getTask(message.name);
+        QDateTime compliteTime = QDateTime::currentDateTime();
+        task["lastCompliteTime"] = compliteTime.toString(timeFormat).toStdString();
+
+        QDateTime startTime;
+        startTime = QDateTime::fromString(QString::fromStdString(task["lastStartTime"]), timeFormat);
+
+        // Запись времени выполнения задания
+        QString execTime = extras::secondsToString(startTime.secsTo(compliteTime));
+        task["execTime"] = execTime.toStdString();
+
+        configData.setTask(message.name, task);
+
+        ui->textEditLog->insertPlainText(execTime + "\n");
+    }
+
+    ui->textEditLog->insertPlainText(message.name + ": " + message.message + "\n");
 }
 
 void MainWindow::showWindow()
@@ -287,12 +311,12 @@ void MainWindow::on_pushButtonSendToThread_clicked()
 void MainWindow::on_pushButtonShedulerRestart_clicked()
 {
     qDebug() << "MainWindow thread id: " << QThread::currentThreadId();
-    ui->textEditTask->insertPlainText("Restart sheduler\n");
+    ui->textEditLog->insertPlainText("Restart sheduler\n");
     restartSheduler();
 }
 
 void MainWindow::on_pushButtonShedulerStop_clicked()
 {
-    emit send(taskMessage("all", "stop"));
+    emit send(taskMessage("all", TypeMessage::ABORTED, "stop"));
     shedulerStarted = false;
 }

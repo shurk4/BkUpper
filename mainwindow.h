@@ -33,7 +33,9 @@ class MainWindow : public QMainWindow
 
     JSONConverter configData;
     QString lastPath = QDir::homePath();
-    std::map<QString, Engine*> tasksMap;
+
+    QString timeFormat = "dd.MM.yyyy HH:mm:ss";
+//    std::map<QString, Engine*> tasksMap;
 
     bool system = false;
     bool startWithOS = false;

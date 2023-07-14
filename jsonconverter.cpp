@@ -71,7 +71,7 @@ json JSONConverter::getFullTasks()
     return tasks;
 }
 
-void JSONConverter::addTask(QString _name, json _task)
+void JSONConverter::setTask(QString _name, json _task)
 {
     tasks[_name.toStdString()] = _task;
     data["tasks"] = tasks;

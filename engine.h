@@ -23,6 +23,9 @@ class Engine : public QObject, public QRunnable
     QDir sourceDir;
     QDir destinationDir;
 
+    QString dateFormat = "dd.MM.yyyy";
+    QString timeFormat = "HH:mm:ss";
+
     bool forceStop = false;
 
     std::string log; // Лог
@@ -34,7 +37,7 @@ public:
     ~Engine();
 
     void writeLog();
-    void prepareMessage(QString message);
+    void prepareMessage(const TypeMessage _type, const QString _message);
 
     void doWork();
 

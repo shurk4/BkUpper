@@ -3,6 +3,15 @@
 
 extras::extras(){}
 
+QString extras::secondsToString(qint64 seconds)
+{
+    const qint64 DAY = 86400;
+    qint64 days = seconds / DAY;
+    QTime t = QTime(0,0).addSecs(seconds % DAY);
+    return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
+      .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+}
+
 void extras::showTasksList(QListWidget *_widget, const json _tasks)
 {
     _widget->clear();
@@ -68,7 +77,7 @@ taskMessage::taskMessage()
 
 }
 
-taskMessage::taskMessage(QString _name, QString _message) : name(_name), message(_message)
+taskMessage::taskMessage(QString _name, TypeMessage _type, QString _message) : name(_name), type(_type), message(_message)
 {
 
 }

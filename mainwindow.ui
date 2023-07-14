@@ -72,7 +72,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QTextEdit" name="textEditTask"/>
+       <widget class="QTextEdit" name="textEditTaskDeleted"/>
       </item>
      </layout>
     </item>

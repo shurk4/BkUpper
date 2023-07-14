@@ -46,7 +46,7 @@ public:
 
     bool isTodayTask(); // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
 
-    void prepareMessage(QString _message);
+    void prepareMessage(const TypeMessage _type, const QString _message);
 
 signals:
     void send(taskMessage); // Отправка сообщения родительскому окну

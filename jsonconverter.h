@@ -55,7 +55,7 @@ public:
     void setFullTasks(json _tasks);
     json getFullTasks();
 
-    void addTask(QString _name, json _task);
+    void setTask(QString _name, json _task);
     void removeTask(QString _name);
     json getTask(QString _name);
 };

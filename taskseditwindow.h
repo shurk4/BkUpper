@@ -83,6 +83,8 @@ private slots:
 
     void on_pushButtonSystem_clicked();
 
+    void on_lineEditCopiesNum_textEdited(const QString &arg1);
+
 signals: // отправка данных
     void sendData(JSONConverter);
     void showParentWindow();
