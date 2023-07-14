@@ -44,6 +44,8 @@ set(PROJECT_SOURCES
         settingswindow.h
         settingswindow.cpp
         settingswindow.ui
+
+        updateInfo.txt
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
