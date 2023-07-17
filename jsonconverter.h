@@ -55,6 +55,7 @@ public:
     void setFullTasks(json _tasks);
     json getFullTasks();
 
+    bool containTask(QString const _name);
     void setTask(QString _name, json _task);
     void removeTask(QString _name);
     json getTask(QString _name);

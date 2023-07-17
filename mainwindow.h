@@ -13,6 +13,7 @@
 #include <QStyle>
 #include <QAction>
 #include <QTextStream>
+#include <QMessageBox>
 #include <map>
 
 #include "jsonconverter.h"
@@ -32,6 +33,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     JSONConverter configData;
+    json selectedTask;
     QString lastPath = QDir::homePath();
 
     QString timeFormat = "dd.MM.yyyy HH:mm:ss";
@@ -76,8 +78,6 @@ private slots:
 
     void on_pushButtonClearLog_clicked();
 
-    void on_pushButtonTasksShow_clicked();
-
     void on_listWidget_itemClicked(QListWidgetItem *item);
 
     void on_pushButtonSystem_clicked();
@@ -89,10 +89,6 @@ private slots:
     void on_actionClose_triggered();
 
     void on_actionTray_triggered();
-
-    void on_pushButtonRunThread_clicked();
-
-    void on_pushButtonSendToThread_clicked();
 
     void on_pushButtonShedulerRestart_clicked();
 

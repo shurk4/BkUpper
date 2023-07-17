@@ -26,9 +26,10 @@ class Engine : public QObject, public QRunnable
     QString dateFormat = "dd.MM.yyyy";
     QString timeFormat = "HH:mm:ss";
 
+    bool lifeLog = false;
     bool forceStop = false;
 
-    std::string log; // Лог
+    QString log; // Лог
     int copyNum; // Количество копий для простого копирования
 
 public:

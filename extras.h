@@ -12,9 +12,10 @@
 enum TypeMessage
 {
     START, // Задача запущена(Главное окно записывает время запуска задачи)
-    COMPLITE, // Задача завершена(Главное окно записывает время завершения задачи)
+    COMPLITE, // Задача завершена(Главное окно записывает время завершения задачи и статус заверщение(завершена, с ошибками)
     ABORTED, // Задача прервана(Главное окно записывает время прерывания задачи)
-    INFORMATION, // Просто информация
+    INFORMATION, // Просто информация???
+    COPIES, // Передаёт информацию о количестве хранимых копий
     LOG // Отправка лога(По окончанию задачи или при включённом отображении лога) гавное окно сохраняет лог в папке с копией
 };
 
@@ -37,11 +38,12 @@ class extras
 public:
     extras();
 
-    QString static secondsToString(qint64 seconds);
+    static QString secondsToString(qint64 const seconds); // секунды в строку времени выполнения (0days, 00:00:00)
+    static QString cutPath(QString const _path, const int stringSize);
 
-    void static showTasksList(QListWidget *_widget, json const _tasks);
-    int static dayToInt(std::string const _day);
-    int static monthToInt(std::string const _month);
+    static void showTasksList(QListWidget *_widget, json const _tasks); // вывод списка задачь в QListWidget
+    static int dayToInt(std::string const _day);
+    static int monthToInt(std::string const _month);
 
     //общение между потоками
     static bool itsName(QString &_recivedMessage); // Проверка на запрос имени задачи

@@ -8,8 +8,17 @@ QString extras::secondsToString(qint64 seconds)
     const qint64 DAY = 86400;
     qint64 days = seconds / DAY;
     QTime t = QTime(0,0).addSecs(seconds % DAY);
-    return QString("%1 days, %2 hours, %3 minutes, %4 seconds")
-      .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+//    return QString("%1 days, %2:%3:%4") .arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+    return QString("%1 days, " + t.toString()) .arg(days);
+}
+
+QString extras::cutPath(const QString _path, const int stringSize)
+{
+    int leftPartSize = _path.indexOf('/') + 4;
+    int rightPartSize = stringSize - leftPartSize - 3;
+
+//    return _path.left(leftPartSize) + "..." + _path.right(_path.size() - _path.lastIndexOf("/") + 4);
+    return _path.left(leftPartSize) + "..." + _path.right(rightPartSize);
 }
 
 void extras::showTasksList(QListWidget *_widget, const json _tasks)

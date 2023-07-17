@@ -4,10 +4,15 @@
 /*
  * Типы сообщений taskMessage
  *
- * лог копирования(удалил при переносе функций)
+ * лог копирования(удалил при переносе функций):
+ *      mainwindow:
+ *         при активном system выделенной задаче отправляется сигнал о включении лога.
+ *      engine:
+ *         при получении сигнала включения лога lifeLog = true
+ *         сигналы лога отсекаются в момент подготовки сообщений в prapareMessage if(lifeLog)...
+ *
  * сохранение лога в папку с копиями(имя лога: имя задачи_log.txt)
  * добавить точки выхода из потока при копировании(при выходе сохранять лог и указывать что задача была прервана)
- * записывать в config.json время последнего запуска и окончания задачи - сделано см. updateInfo.txt!
  * Добавить определение объёма копии
  *
  * поведение при условии хранения только одной копии
@@ -16,6 +21,7 @@
  * сделать вывод процентов копирования и лога(если system активен)
  * Закрывать потоки при выходе из программы
  *
+ * создавать иконку в трее только при активации фонового режима
  * сделать автозагрузку
  * архивировать копии?
  * отправка сообщений
@@ -31,9 +37,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     applyConfig();
 
-    iconActivate();
+    iconActivate(); // Создаёт иконку в трее
+
+    ui->gridWidgetTaskInfo->hide();
 
     extras::showTasksList(ui->listWidget, configData.getFullTasks());
+
+    this->resize(100, 100);
 }
 
 MainWindow::~MainWindow()
@@ -64,7 +74,8 @@ void MainWindow::closeEvent(QCloseEvent * event)
 
 void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    switch (reason){
+    switch (reason)
+    {
     case QSystemTrayIcon::Trigger:
         /* Событие игнорируется в том случае, если чекбокс не отмечен
          * */
@@ -82,7 +93,6 @@ void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)
     default:
         break;
     }
-
 }
 
 void MainWindow::applyConfig()
@@ -180,32 +190,43 @@ void MainWindow::reciveData(JSONConverter _data)
 
 void MainWindow::recive(taskMessage message)
 {
-    // Запись времени начала последнего выполнения задания
-    if(message.type == START)
+    if(configData.containTask(message.name))
     {
         json task = configData.getTask(message.name);
-        task["lastStartTime"] = QDateTime::currentDateTime().toString(timeFormat).toStdString();
+
+        // Запись времени начала последнего выполнения задания
+        if(message.type == START)
+        {
+            task["lastStartTime"] = QDateTime::currentDateTime().toString(timeFormat).toStdString();
+            configData.setTask(message.name, task);
+    //        QDateTime::toTime_t(); // Время в скеундах от начала эпохи
+        }
+
+        // Запись времени окончания последнего выполнения задания
+        if(message.type == COMPLITE)
+        {
+            QDateTime compliteTime = QDateTime::currentDateTime();
+            task["lastCompliteTime"] = compliteTime.toString(timeFormat).toStdString();
+
+            QDateTime startTime;
+            startTime = QDateTime::fromString(QString::fromStdString(task["lastStartTime"]), timeFormat);
+
+            // Запись времени выполнения задания
+            QString execTime = extras::secondsToString(startTime.secsTo(compliteTime));
+            task["execTime"] = execTime.toStdString();
+
+            configData.setTask(message.name, task);
+
+            ui->textEditLog->insertPlainText(execTime + "\n");
+        }
+
+        if(message.type == COPIES)
+        {
+            task["currentCopiesNum"] = message.message.toInt();
+//            QMessageBox::information(this, "", "Recived copies numder" + message.message);
+        }
+
         configData.setTask(message.name, task);
-//        QDateTime::toTime_t(); // Время в сеундах от начала эпохи
-    }
-
-    // Запись времени окончания последнего выполнения задания
-    if(message.type == COMPLITE)
-    {
-        json task = configData.getTask(message.name);
-        QDateTime compliteTime = QDateTime::currentDateTime();
-        task["lastCompliteTime"] = compliteTime.toString(timeFormat).toStdString();
-
-        QDateTime startTime;
-        startTime = QDateTime::fromString(QString::fromStdString(task["lastStartTime"]), timeFormat);
-
-        // Запись времени выполнения задания
-        QString execTime = extras::secondsToString(startTime.secsTo(compliteTime));
-        task["execTime"] = execTime.toStdString();
-
-        configData.setTask(message.name, task);
-
-        ui->textEditLog->insertPlainText(execTime + "\n");
     }
 
     ui->textEditLog->insertPlainText(message.name + ": " + message.message + "\n");
@@ -248,14 +269,82 @@ void MainWindow::on_pushButtonClearLog_clicked()
     ui->textEditLog->clear();
 }
 
-void MainWindow::on_pushButtonTasksShow_clicked()
-{
-    extras::showTasksList(ui->listWidget, configData.getFullTasks());
-}
 
+// Информация о задании по клику в списке
 void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
 {
+    ui->gridWidgetTaskInfo->show();
 
+    selectedTask = configData.getTask(item->text());
+
+//    QMessageBox::information(this, "", "Shorted path:"  + extras::cutPath(QString::fromStdString(task["destPath"]), 28));
+
+    if(selectedTask.contains("type")) ui->labelType->setText(QString::fromStdString(selectedTask["type"]));
+    else ui->labelType->setText("-");
+
+    if(selectedTask.contains("sourcePath"))
+    {
+        QString path = QString::fromStdString(selectedTask["sourcePath"]);
+        if(path.size() > 28)
+        {
+            path = extras::cutPath(QString::fromStdString(selectedTask["sourcePath"]), 28);
+        }
+        ui->labelSourcePath->setText(path);
+    }
+    else ui->labelSourcePath->setText("-");
+
+    if(selectedTask.contains("destPath"))
+    {
+        QString path = QString::fromStdString(selectedTask["destPath"]);
+        if(path.size() > 28)
+        {
+            path = extras::cutPath(QString::fromStdString(selectedTask["destPath"]), 28);
+        }
+        ui->labelDestPath->setText(path);
+    }
+    else ui->labelDestPath->setText("-");
+
+    if(selectedTask.contains("lastStartTime"))ui->labelLastRun->setText(QString::fromStdString(selectedTask["lastStartTime"]));
+    else ui->labelLastRun->setText("-");
+
+    if(selectedTask.contains("lastCompliteTime"))ui->labelLastComplite->setText(QString::fromStdString(selectedTask["lastCompliteTime"]));
+    else ui->labelLastComplite->setText("-");
+
+    if(selectedTask.contains("execTime"))ui->labelExecTime->setText(QString::fromStdString(selectedTask["execTime"]));
+    else ui->labelExecTime->setText("-");
+
+    ui->labelExecResult->setText("Статус последнего выполнения!"); // Успешно, с ошибками, отменено пользователем
+
+    if(selectedTask.contains("repeat"))
+    {
+        if(selectedTask["repeat"] == "daily")
+        {
+            ui->labelNextRun->setText("daily");
+        }
+        if(selectedTask["repeat"] == "monthly")
+        {
+            ui->labelNextRun->setText("monthly");
+        }
+        if(selectedTask["repeat"] == "weekly")
+        {
+            ui->labelNextRun->setText("weekly");
+        }
+        if(selectedTask["repeat"] == "once")
+        {
+            QDateTime dateTime;
+            dateTime.setDate(QDate::fromString(QString::fromStdString(selectedTask["date"]), "dd.MM.yyyy"));
+            dateTime.setTime(QTime::fromString(QString::fromStdString(selectedTask["time"]), "hh:mm"));
+            ui->labelNextRun->setText(dateTime.toString("dd.MM.yyyy hh:mm"));
+        }
+    }
+    else ui->labelNextRun->setText("-");
+
+    if(selectedTask.contains("currentCopiesNum"))
+    {
+        int num = selectedTask["currentCopiesNum"];
+        ui->labelCurrentCopiesNum->setText(QString::number(num));
+    }
+    else ui->labelCurrentCopiesNum->setText("-");
 }
 
 void MainWindow::on_pushButtonSystem_clicked()
@@ -272,11 +361,13 @@ void MainWindow::on_pushButtonSystem_clicked()
         system=true;
         configData.addConfig("system", true);
     }
+
+    this->resize(100, 100);
 }
 
 void MainWindow::on_actionSettings_triggered()
 {
-    settingsWindow->show();
+    settingWindowStart();
 }
 
 void MainWindow::on_actionClose_triggered()
@@ -288,24 +379,6 @@ void MainWindow::on_actionClose_triggered()
 void MainWindow::on_actionTray_triggered()
 {
     close();
-}
-
-void MainWindow::on_pushButtonRunThread_clicked()
-{
-//    tasksMap["task 1"] = new Engine("string1", "str2");
-
-//    connect(tasksMap["task 1"], &Engine::sendMessage, this, &MainWindow::recive);
-//    connect(this, &MainWindow::sendMessage, tasksMap["task 1"], &Engine::recive);
-
-//    QThreadPool::globalInstance()->start(tasksMap["task 1"]);
-
-//    ui->textEditTask->clear();
-//    emit sendMessage("Test message");
-}
-
-void MainWindow::on_pushButtonSendToThread_clicked()
-{
-
 }
 
 void MainWindow::on_pushButtonShedulerRestart_clicked()

@@ -38,8 +38,9 @@ void TasksEditWindow::saveTask()
         task["type"] = ui->comboBoxType->currentText().toStdString();
         task["days"] = daysToJson();
         task["months"] = monthsToJson();
-        task["time"] = ui->timeEdit->text().toStdString();
-        task["date"] = ui->dateEdit->text().toStdString();
+        ui->timeEdit->time().toString("HH:mm");
+        task["time"] = ui->timeEdit->time().toString("HH:mm").toStdString();
+        task["date"] = ui->dateEdit->date().toString("dd.MM.yyyy").toStdString();
         if(task["type"] == "Копия")
         {
             task["copiesNum"] = ui->lineEditCopiesNum->text().toInt();
@@ -83,7 +84,13 @@ void TasksEditWindow::showTask(const QString _name)
     {
         QTime taskTime;
         QString stringTime = QString::fromStdString(task["time"]);
+//        QMessageBox::information(this, "", "String time: " + stringTime);
+
         taskTime = QTime::fromString(stringTime, "hh:mm");
+
+//        QMessageBox::information(this, "", "Task time: " + taskTime.toString());
+
+//        taskTime = QTime::fromString("12:34");
         ui->timeEdit->setTime(taskTime);
     }
 

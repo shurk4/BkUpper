@@ -4,12 +4,22 @@
 Engine::Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum)
     : sourceDir(_sourceDir), destinationDir(_destinationDir), taskName(_taskName), copyNum(_copyNum)
 {
-
+    log = QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm") + "\n";
 }
 
 Engine::~Engine()
 {
     deleteLater();
+}
+
+void Engine::writeLog()
+{
+    QFile file(destinationDir.absolutePath() + "/log.txt");
+    if(file.isOpen())
+    {
+        file.write(log.toUtf8());
+        file.close();
+    }
 }
 
 void Engine::prepareMessage(TypeMessage _type, QString _message)
@@ -26,6 +36,7 @@ void Engine::run()
 
 void Engine::doWork()
 {
+    qDebug() << "Task " << taskName << "started in thread: " << QThread::currentThreadId() << "\n";
     prepareMessage(TypeMessage::START, "Начинает работу");
     prepareMessage(TypeMessage::INFORMATION, "Путь источник: " + sourceDir.absolutePath() + "\n");
     prepareMessage(TypeMessage::INFORMATION, "Путь назначения: " + destinationDir.absolutePath() + "\n");
@@ -76,6 +87,7 @@ void Engine::optimizeFolders()
         QStringList  entryFolders = destinationDir.entryList(QDir::AllDirs | QDir::Hidden | QDir::NoDotAndDotDot);
 
         prepareMessage(TypeMessage::INFORMATION, "Найдено копий: " + QString::number(entryFolders.size()) + "\n");
+        prepareMessage(COPIES, QString::number(entryFolders.size()));
 
         // Перечисление имеющихся копий
         foreach(QString entry, entryFolders)
@@ -134,12 +146,12 @@ void Engine::createFolder(QDir _entryDir, QDir _targetDir)
     if(QDir(newDirPatch).exists())
     {
         prepareMessage(TypeMessage::INFORMATION, "Folder created: " + newDirPatch);
-        log += "Folder created: " + newDirPatch.toStdString() + "\n\n";
+        log += "Folder created: " + newDirPatch + "\n\n";
     }
     else
     {
         prepareMessage(TypeMessage::INFORMATION, "!!! Folder not created!!! " + newDirPatch);
-        log += "!!! Folder not created!!! " + newDirPatch.toStdString() + "\n";
+        log += "!!! Folder not created!!! " + newDirPatch + "\n";
     }
 }
 
@@ -182,7 +194,7 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
         QString destFile = dest + "/" + entry;
         do
         {
-            log += "    " + sourceFile.fileName().toStdString() + "\n";
+            log += "    " + sourceFile.fileName() + "\n";
             prepareMessage(TypeMessage::INFORMATION, "    " + sourceFile.fileName() + "\n");
 
             if(sourceFile.copy(destFile))
