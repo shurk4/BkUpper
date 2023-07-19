@@ -30,6 +30,7 @@ class Sheduler : public QObject, public QRunnable
 {
     Q_OBJECT
 
+    bool log = false;
     bool forceStop = false;
     bool tasksUpdated = false;
     json tasks;
@@ -44,7 +45,8 @@ public:
     void run(); // метод действия в потоке
     void runTasks(); // Запустить задачи из списка tasksInWork
 
-    bool isTodayTask(); // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
+    bool taskReadyToRun();  // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
+    bool isTodayTask(QString _name);
 
     void prepareMessage(const TypeMessage _type, const QString _message);
 

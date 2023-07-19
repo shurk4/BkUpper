@@ -6,7 +6,7 @@
  *
  * лог копирования(удалил при переносе функций):
  *      mainwindow:
- *         при активном system выделенной задаче отправляется сигнал о включении лога.
+ *         при активном system и выделенной задаче отправляется сигнал о включении лога.
  *      engine:
  *         при получении сигнала включения лога lifeLog = true
  *         сигналы лога отсекаются в момент подготовки сообщений в prapareMessage if(lifeLog)...
@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     configData.writeConfig();
-    emit send(taskMessage("all", TypeMessage::ABORTED, "stop"));
+    emit send(taskMessage("all", TypeMessage::ABORT, "stop"));
     delete ui;
 }
 
@@ -165,7 +165,7 @@ void MainWindow::restartSheduler()
 {
     if(shedulerStarted)
     {
-        emit sendTasks(configData.getFullTasks());
+        prepareMessage("all", ABORT, "");
     }
     else
     {
@@ -175,10 +175,21 @@ void MainWindow::restartSheduler()
         connect(this, &MainWindow::send, sheduler, &Sheduler::recive);
         connect(this, &MainWindow::sendTasks, sheduler, &Sheduler::reciveTasks);
 
+        if(system)
+        {
+            prepareMessage(selectedTaskName, LOG, "on");
+        }
+
         QThreadPool::globalInstance()->start(sheduler);
         emit sendTasks(configData.getFullTasks());
         shedulerStarted = true;
     }
+}
+
+void MainWindow::prepareMessage(const QString _name, const TypeMessage _type, const QString _message)
+{
+    taskMessage message(_name, _type, _message);
+    send(message);
 }
 
 void MainWindow::reciveData(JSONConverter _data)
@@ -275,9 +286,19 @@ void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
 {
     ui->gridWidgetTaskInfo->show();
 
-    selectedTask = configData.getTask(item->text());
+    // если открыто окно лога(system) и в списке была выбрана задача отправляем ей информацию о отключении передачи лога
+    if(system && selectedTaskName != "")
+    {
+        prepareMessage(selectedTaskName, LOG, "off");
+    }
 
-//    QMessageBox::information(this, "", "Shorted path:"  + extras::cutPath(QString::fromStdString(task["destPath"]), 28));
+    selectedTaskName = item->text();
+    selectedTask = configData.getTask(selectedTaskName);
+
+    if(system)
+    {
+        prepareMessage(selectedTaskName, LOG, "on");
+    }
 
     if(selectedTask.contains("type")) ui->labelType->setText(QString::fromStdString(selectedTask["type"]));
     else ui->labelType->setText("-");
@@ -285,9 +306,9 @@ void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
     if(selectedTask.contains("sourcePath"))
     {
         QString path = QString::fromStdString(selectedTask["sourcePath"]);
-        if(path.size() > 28)
+        if(path.size() > pathMaxLenght)
         {
-            path = extras::cutPath(QString::fromStdString(selectedTask["sourcePath"]), 28);
+            path = extras::cutPath(QString::fromStdString(selectedTask["sourcePath"]), pathMaxLenght);
         }
         ui->labelSourcePath->setText(path);
     }
@@ -296,9 +317,9 @@ void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
     if(selectedTask.contains("destPath"))
     {
         QString path = QString::fromStdString(selectedTask["destPath"]);
-        if(path.size() > 28)
+        if(path.size() > pathMaxLenght)
         {
-            path = extras::cutPath(QString::fromStdString(selectedTask["destPath"]), 28);
+            path = extras::cutPath(QString::fromStdString(selectedTask["destPath"]), pathMaxLenght);
         }
         ui->labelDestPath->setText(path);
     }
@@ -354,12 +375,20 @@ void MainWindow::on_pushButtonSystem_clicked()
         ui->verticalWidgetSystem->hide();
         system = false;
         configData.addConfig("system", false);
+        if(selectedTaskName != "")
+        {
+            prepareMessage(selectedTaskName, LOG, "off");
+        }
     }
     else
     {
         ui->verticalWidgetSystem->show();
         system=true;
         configData.addConfig("system", true);
+        if(selectedTaskName != "")
+        {
+            prepareMessage(selectedTaskName, LOG, "on");
+        }
     }
 
     this->resize(100, 100);
@@ -386,10 +415,4 @@ void MainWindow::on_pushButtonShedulerRestart_clicked()
     qDebug() << "MainWindow thread id: " << QThread::currentThreadId();
     ui->textEditLog->insertPlainText("Restart sheduler\n");
     restartSheduler();
-}
-
-void MainWindow::on_pushButtonShedulerStop_clicked()
-{
-    emit send(taskMessage("all", TypeMessage::ABORTED, "stop"));
-    shedulerStarted = false;
 }

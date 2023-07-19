@@ -33,11 +33,15 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
     JSONConverter configData;
-    json selectedTask;
     QString lastPath = QDir::homePath();
+
+    //Выделенная задача
+    json selectedTask;
+    QString selectedTaskName = "";
 
     QString timeFormat = "dd.MM.yyyy HH:mm:ss";
 //    std::map<QString, Engine*> tasksMap;
+    int pathMaxLenght = 28;
 
     bool system = false;
     bool startWithOS = false;
@@ -60,6 +64,7 @@ public:
     void iconActivate();
     void settingWindowStart();
     void restartSheduler();
+    void prepareMessage(QString const _name, TypeMessage const _type, QString const _message);
 
 protected:
     /* Виртуальная функция родительского класса в нашем классе
@@ -91,8 +96,6 @@ private slots:
     void on_actionTray_triggered();
 
     void on_pushButtonShedulerRestart_clicked();
-
-    void on_pushButtonShedulerStop_clicked();
 
 private:
     Ui::MainWindow *ui;

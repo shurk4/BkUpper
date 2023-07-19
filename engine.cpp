@@ -25,7 +25,8 @@ void Engine::writeLog()
 void Engine::prepareMessage(TypeMessage _type, QString _message)
 {
     // Отправляет информацию выполняемой задачи шедулеру и шедулер переправляет её в главное окно
-    emit sendMessage(taskMessage(taskName, _type , _message + "\n"));
+    if(_type == LOG && lifeLog) emit sendMessage(taskMessage(taskName, _type , _message + "\n"));
+    else emit sendMessage(taskMessage(taskName, _type , _message + "\n"));
 }
 
 void Engine::run()
@@ -38,9 +39,9 @@ void Engine::doWork()
 {
     qDebug() << "Task " << taskName << "started in thread: " << QThread::currentThreadId() << "\n";
     prepareMessage(TypeMessage::START, "Начинает работу");
-    prepareMessage(TypeMessage::INFORMATION, "Путь источник: " + sourceDir.absolutePath() + "\n");
-    prepareMessage(TypeMessage::INFORMATION, "Путь назначения: " + destinationDir.absolutePath() + "\n");
-    prepareMessage(TypeMessage::INFORMATION, "Максимальное количество копий: " + QString::number(copyNum));
+    prepareMessage(TypeMessage::LOG, "Путь источник: " + sourceDir.absolutePath() + "\n");
+    prepareMessage(TypeMessage::LOG, "Путь назначения: " + destinationDir.absolutePath() + "\n");
+    prepareMessage(TypeMessage::LOG, "Максимальное количество копий: " + QString::number(copyNum));
 
     destDirCreate();
     optimizeFolders();
@@ -51,26 +52,26 @@ void Engine::doWork()
 
 void Engine::destDirCreate()
 {
-    prepareMessage(TypeMessage::INFORMATION, "preparing the destination folder");
+    prepareMessage(TypeMessage::LOG, "preparing the destination folder");
 
     if(!destinationDir.exists())
     {
-        prepareMessage(TypeMessage::INFORMATION, "Destination folder not exist!");
+        prepareMessage(TypeMessage::LOG, "Destination folder not exist!");
 
         QDir().mkdir(destinationDir.absolutePath());
 
         if(destinationDir.exists())
         {
-            prepareMessage(TypeMessage::INFORMATION, "Destination folder is created!");
+            prepareMessage(TypeMessage::LOG, "Destination folder is created!");
         }
         else
         {
-            prepareMessage(TypeMessage::INFORMATION, "ERROR! Could not create destinaion folder!");
+            prepareMessage(TypeMessage::LOG, "ERROR! Could not create destinaion folder!");
         }
     }
     else
     {
-        prepareMessage(TypeMessage::INFORMATION, "Destination folder is exist!");
+        prepareMessage(TypeMessage::LOG, "Destination folder is exist!");
     }
 }
 
@@ -81,18 +82,18 @@ void Engine::optimizeFolders()
 
     if(dir.exists())
     {
-        prepareMessage(TypeMessage::INFORMATION, "Started operations with buckup folders!");
+        prepareMessage(TypeMessage::LOG, "Started operations with buckup folders!");
 
         // создание списка каталогов
         QStringList  entryFolders = destinationDir.entryList(QDir::AllDirs | QDir::Hidden | QDir::NoDotAndDotDot);
 
-        prepareMessage(TypeMessage::INFORMATION, "Найдено копий: " + QString::number(entryFolders.size()) + "\n");
+        prepareMessage(TypeMessage::LOG, "Найдено копий: " + QString::number(entryFolders.size()) + "\n");
         prepareMessage(COPIES, QString::number(entryFolders.size()));
 
         // Перечисление имеющихся копий
         foreach(QString entry, entryFolders)
         {
-            prepareMessage(TypeMessage::INFORMATION, entry);
+            prepareMessage(TypeMessage::LOG, entry);
         }
 
         //!!!!!!!!!!!!!! Добавить поведение при условии хранения только одной копии!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -100,7 +101,7 @@ void Engine::optimizeFolders()
 
         if(entryFolders.size() >= copyNum)
         {
-            prepareMessage(TypeMessage::INFORMATION, "Maximum numder copies reached");
+            prepareMessage(TypeMessage::LOG, "Maximum numder copies reached");
         }
 
         for(int i = entryFolders.size(); i > 0; i--)
@@ -111,7 +112,7 @@ void Engine::optimizeFolders()
                   QDir removePatch = oldName;
                   removePatch.removeRecursively();
 
-                  prepareMessage(TypeMessage::INFORMATION, "Old copy deleted");
+                  prepareMessage(TypeMessage::LOG, "Old copy deleted");
             }
             else
             {
@@ -120,20 +121,20 @@ void Engine::optimizeFolders()
 
                 destinationDir.rename(oldName, newName);
 
-                prepareMessage(TypeMessage::INFORMATION, "Folder " + oldName + " renamed to " + newName);
+                prepareMessage(TypeMessage::LOG, "Folder " + oldName + " renamed to " + newName);
             }
         }
     }
     else
     {
-        prepareMessage(TypeMessage::INFORMATION, "Destination folder is not exist");
+        prepareMessage(TypeMessage::LOG, "Destination folder is not exist");
         QThread::currentThread()->quit();
     }
 
     QDir().mkdir(buFolder);
     destinationDir.setPath(buFolder);
 
-    prepareMessage(TypeMessage::INFORMATION, "Destination folder \"" + taskName + "0\" created");
+    prepareMessage(TypeMessage::LOG, "Destination folder \"" + taskName + "0\" created");
 }
 
 void Engine::createFolder(QDir _entryDir, QDir _targetDir)
@@ -145,12 +146,12 @@ void Engine::createFolder(QDir _entryDir, QDir _targetDir)
 
     if(QDir(newDirPatch).exists())
     {
-        prepareMessage(TypeMessage::INFORMATION, "Folder created: " + newDirPatch);
+        prepareMessage(TypeMessage::LOG, "Folder created: " + newDirPatch);
         log += "Folder created: " + newDirPatch + "\n\n";
     }
     else
     {
-        prepareMessage(TypeMessage::INFORMATION, "!!! Folder not created!!! " + newDirPatch);
+        prepareMessage(TypeMessage::LOG, "!!! Folder not created!!! " + newDirPatch);
         log += "!!! Folder not created!!! " + newDirPatch + "\n";
     }
 }
@@ -188,25 +189,25 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
         int count = 0;
         bool succes = false;
         log += "Copy file\n";
-        prepareMessage(TypeMessage::INFORMATION, "Copy file");
+        prepareMessage(TypeMessage::LOG, "Copy file");
 
         QFile sourceFile = _entryDir.absolutePath() + "/" + entry;
         QString destFile = dest + "/" + entry;
         do
         {
             log += "    " + sourceFile.fileName() + "\n";
-            prepareMessage(TypeMessage::INFORMATION, "    " + sourceFile.fileName() + "\n");
+            prepareMessage(TypeMessage::LOG, "    " + sourceFile.fileName() + "\n");
 
             if(sourceFile.copy(destFile))
             {
                 succes = true;
-                prepareMessage(TypeMessage::INFORMATION, "Succes!");
+                prepareMessage(TypeMessage::LOG, "Succes!");
                 log += "Succes!\n";
             }
             else
             {
-                prepareMessage(TypeMessage::INFORMATION, "!!! Fail!");
-                prepareMessage(TypeMessage::INFORMATION, sourceFile.errorString());
+                prepareMessage(TypeMessage::LOG, "!!! Fail!");
+                prepareMessage(TypeMessage::LOG, sourceFile.errorString());
                 log += "Fail!\n";
 
                  if(count < 5)
@@ -216,7 +217,7 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
                      count++;
                  }
             }
-            prepareMessage(TypeMessage::INFORMATION, "\n");
+            prepareMessage(TypeMessage::LOG, "\n");
             log += "\n";
         } while (!succes && count < 5);
     }
@@ -224,10 +225,28 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
 
 void Engine::recive(taskMessage _recive)
 {
-    if(_recive.name == taskName)
+    qDebug() << "Task: " << taskName << " recive message: " << _recive.name << " " << _recive.message << "\n";
+
+    if(_recive.type == ABORT && (_recive.name == taskName || _recive.name == "all"))
     {
-        prepareMessage(TypeMessage::INFORMATION, "Task recive message with name: " + _recive.name);
+        forceStop = true;
+        prepareMessage(TypeMessage::ABORT, "Task: is stopped!\n");
+        return;
     }
-    if(_recive.message == "stop") forceStop = true;
-    prepareMessage(TypeMessage::ABORTED, "Task: is stopped!\n");
+
+    if(_recive.name == taskName && _recive.type == LOG)
+    {
+        qDebug() << taskName << " log ";
+        if(_recive.message == "on")
+        {
+            lifeLog = true;
+            qDebug() << "enabled";
+        }
+        else
+        {
+            lifeLog = false;
+            qDebug() << "disabled";
+        }
+        qDebug() << "\n";
+    }
 }

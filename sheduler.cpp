@@ -138,7 +138,7 @@ void Sheduler::run()
             break;
         }
 
-        qDebug() << ".";
+//        qDebug() << ".";
 
         // Если был обновлён список задач
         if(tasksUpdated)
@@ -148,7 +148,7 @@ void Sheduler::run()
         }
 
         //Если пришло время выполнения задач
-        if(isTodayTask())
+        if(taskReadyToRun())
         {
             runTasks();
         }
@@ -161,7 +161,7 @@ void Sheduler::run()
 }
 
 // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
-bool Sheduler::isTodayTask()
+bool Sheduler::taskReadyToRun()
 {
     if(todayTasks.begin().key() <= QTime::currentTime())
     {
@@ -176,6 +176,20 @@ bool Sheduler::isTodayTask()
             }
         }
         if(!tasksInWork.empty()) return true;
+    }
+    return false;
+}
+
+bool Sheduler::isTodayTask(QString _name)
+{
+    if(todayTasks.size() != 0)
+    {    for(auto it = todayTasks.begin(); it != todayTasks.end(); it++)
+        {
+            if(it.value() == _name)
+            {
+                return true;
+            }
+        }
     }
     return false;
 }
@@ -201,6 +215,8 @@ void Sheduler::runTasks()
         connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
         connect(this, &Sheduler::send, task, &Engine::recive);
 
+        if(log) taskMessage message(it.key(), LOG, "on");
+
         QThreadPool::globalInstance()->start(task);
     }
 }
@@ -213,22 +229,42 @@ void Sheduler::prepareMessage(TypeMessage _type, QString _message)
 // Приём сообщения от родительского окна
 void Sheduler::recive(taskMessage _recive)
 {
-    QString temp = "Sheduler recive message: " + _recive.name + _recive.message;
-    if(_recive.message == "stop")
-    {
-//        prepareMessage("Stop signal recived!");
-        taskMessage("sheduler", TypeMessage::INFORMATION, "Stop signal recived!");
-        emit sendToTask(_recive);
-        forceStop = true;
+    QString temp = "Sheduler recive message: " + _recive.name + " " + _recive.message;
 
-//        QThread::currentThread()->terminate();
-//        QThread::currentThread()->quit();
+    if(_recive.type == LOG)
+    {
+        if(_recive.message == "on")
+        {
+            log = true;
+        }
+        else
+        {
+            log = false;
+        }
     }
 
-    temp += "\n";
-    qDebug() << temp;
-//    prepareMessage(temp);
+//    // преадресация сообщения если задание выполняется
+//    if(tasksInWork.size() != 0 && tasksInWork.contains(_recive.name))
+//    {
+//        emit sendToTask(_recive);
+//    }
+
+    // если задача запланирована на сегодня - сообщаем об этом
+    if(isTodayTask(_recive.name) && log)
+    {
+        prepareMessage(LOG, "Task: " + _recive.name + " is scheduled today");
+    }
+
+    if(_recive.name == "all" && _recive.type == ABORT)
+    {
+        taskMessage("all", ABORT, "Stop signal recived!");
+        emit sendToTask(_recive);
+        forceStop = true;
+    }
+
     taskMessage("sheduler",TypeMessage::INFORMATION, temp);
+
+    emit sendToTask(_recive);
 }
 
 // Приём сообщения от запущеной задачи и отправка в родительское окно
