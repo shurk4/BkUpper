@@ -21,6 +21,9 @@ TasksEditWindow::TasksEditWindow(QWidget *parent) :
     ui->timeEdit->setDateTime(QDateTime::currentDateTime());
     ui->dateEdit->setDateTime(QDateTime::currentDateTime());
     ui->verticalWidgetSystem->hide();
+
+    // Ввод количества копий только цифры до 30, ограничение в on_lineEditCopiesNum_textEdited
+    ui->lineEditCopiesNum->setValidator(new QIntValidator(0, 10, this));
 }
 
 TasksEditWindow::~TasksEditWindow()
@@ -35,9 +38,14 @@ void TasksEditWindow::saveTask()
         task["type"] = ui->comboBoxType->currentText().toStdString();
         task["days"] = daysToJson();
         task["months"] = monthsToJson();
-        task["time"] = ui->timeEdit->text().toStdString();
-        task["date"] = ui->dateEdit->text().toStdString();
-        data.addTask(ui->lineEditTaskName->text(), task);
+        ui->timeEdit->time().toString("HH:mm");
+        task["time"] = ui->timeEdit->time().toString("HH:mm").toStdString();
+        task["date"] = ui->dateEdit->date().toString("dd.MM.yyyy").toStdString();
+        if(task["type"] == "Копия")
+        {
+            task["copiesNum"] = ui->lineEditCopiesNum->text().toInt();
+        }
+        data.setTask(ui->lineEditTaskName->text(), task);
         data.writeConfig();
         emit sendData(data);
     }
@@ -76,7 +84,13 @@ void TasksEditWindow::showTask(const QString _name)
     {
         QTime taskTime;
         QString stringTime = QString::fromStdString(task["time"]);
+//        QMessageBox::information(this, "", "String time: " + stringTime);
+
         taskTime = QTime::fromString(stringTime, "hh:mm");
+
+//        QMessageBox::information(this, "", "Task time: " + taskTime.toString());
+
+//        taskTime = QTime::fromString("12:34");
         ui->timeEdit->setTime(taskTime);
     }
 
@@ -99,6 +113,12 @@ void TasksEditWindow::showTask(const QString _name)
     else
     {
         ui->comboBoxType->setCurrentText("Копия");
+    }
+
+    if(!task["copiesNum"].empty())
+    {
+        int copiesNum = task["copiesNum"];
+        ui->lineEditCopiesNum->setText(QString::number(copiesNum));
     }
 }
 
@@ -278,7 +298,7 @@ void TasksEditWindow::on_pushButtonSave_clicked()
 void TasksEditWindow::on_radioButtonDaily_clicked()
 {
     hideWidgets();
-    task["repeat"] = "dayli";
+    task["repeat"] = "daily";
 }
 
 void TasksEditWindow::on_radioButtonWeekly_clicked()
@@ -339,5 +359,13 @@ void TasksEditWindow::on_pushButtonSystem_clicked()
     {
         ui->verticalWidgetSystem->show();
         system = true;
+    }
+}
+
+void TasksEditWindow::on_lineEditCopiesNum_textEdited(const QString &arg1)
+{
+    if(ui->lineEditCopiesNum->text().toInt() > 30)
+    {
+        ui->lineEditCopiesNum->setText("30");
     }
 }

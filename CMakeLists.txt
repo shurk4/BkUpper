@@ -38,9 +38,14 @@ set(PROJECT_SOURCES
         engine.h
         engine.cpp
 
+        sheduler.h
+        sheduler.cpp
+
         settingswindow.h
         settingswindow.cpp
         settingswindow.ui
+
+        updateInfo.txt
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
