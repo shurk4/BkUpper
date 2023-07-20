@@ -225,7 +225,8 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
 
 void Engine::recive(taskMessage _recive)
 {
-    qDebug() << "Task: " << taskName << " recive message: " << _recive.name << " " << _recive.message << "\n";
+    qDebug() << "Task: " << taskName << " recive message: " << _recive.name << " " << _recive.message << "Log = " << QString::number(lifeLog) << "\n";
+    prepareMessage(INFORMATION, " recived message: " + _recive.name + " " + _recive.message + " log = " + QString::number(lifeLog));
 
     if(_recive.type == ABORT && (_recive.name == taskName || _recive.name == "all"))
     {
@@ -249,4 +250,6 @@ void Engine::recive(taskMessage _recive)
         }
         qDebug() << "\n";
     }
+
+    prepareMessage(INFORMATION, "Lifelog = " + QString::number(lifeLog));
 }

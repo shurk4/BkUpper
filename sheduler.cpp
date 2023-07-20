@@ -215,10 +215,24 @@ void Sheduler::runTasks()
         connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
         connect(this, &Sheduler::send, task, &Engine::recive);
 
-        if(log) taskMessage message(it.key(), LOG, "on");
+        debug("Bool log = " + QString::number(log));
 
         QThreadPool::globalInstance()->start(task);
+
+        if(log)
+        {
+            prepareMessage(INFORMATION, "Try send log status to task");
+            QThread::currentThread()->sleep(1);
+            sendToTask(taskMessage(it.key(), LOG, "on"));
+        }
+
+        QThread::currentThread()->sleep(5);
     }
+}
+
+void Sheduler::debug(const QString str)
+{
+    qDebug() << "- sheduler message: " << str << "\n";
 }
 
 void Sheduler::prepareMessage(TypeMessage _type, QString _message)
