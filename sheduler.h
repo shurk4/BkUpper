@@ -30,7 +30,6 @@ class Sheduler : public QObject, public QRunnable
 {
     Q_OBJECT
 
-    bool log = false;
     bool forceStop = false;
     bool tasksUpdated = false;
     json tasks;

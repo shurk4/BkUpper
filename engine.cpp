@@ -4,7 +4,7 @@
 Engine::Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum)
     : sourceDir(_sourceDir), destinationDir(_destinationDir), taskName(_taskName), copyNum(_copyNum)
 {
-    log = QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm") + "\n";
+
 }
 
 Engine::~Engine()
@@ -12,21 +12,9 @@ Engine::~Engine()
     deleteLater();
 }
 
-void Engine::writeLog()
-{
-    QFile file(destinationDir.absolutePath() + "/log.txt");
-    if(file.isOpen())
-    {
-        file.write(log.toUtf8());
-        file.close();
-    }
-}
-
 void Engine::prepareMessage(TypeMessage _type, QString _message)
 {
-    // Отправляет информацию выполняемой задачи шедулеру и шедулер переправляет её в главное окно
-    if(_type == LOG && lifeLog) emit sendMessage(taskMessage(taskName, _type , _message + "\n"));
-    else emit sendMessage(taskMessage(taskName, _type , _message + "\n"));
+    sendMessage(taskMessage(taskName, _type , _message));
 }
 
 void Engine::run()
@@ -38,21 +26,19 @@ void Engine::run()
 void Engine::doWork()
 {
     qDebug() << "Task " << taskName << "started in thread: " << QThread::currentThreadId() << "\n";
-    prepareMessage(TypeMessage::START, "Начинает работу");
-    prepareMessage(TypeMessage::LOG, "Путь источник: " + sourceDir.absolutePath() + "\n");
-    prepareMessage(TypeMessage::LOG, "Путь назначения: " + destinationDir.absolutePath() + "\n");
-    prepareMessage(TypeMessage::LOG, "Максимальное количество копий: " + QString::number(copyNum));
+    prepareMessage(START, "Начинает работу");
+    prepareMessage(LOG, "Путь источник: " + sourceDir.absolutePath() + "\n");
+    prepareMessage(LOG, "Путь назначения: " + destinationDir.absolutePath() + "\n");
 
     destDirCreate();
     optimizeFolders();
     listEntriesDir(sourceDir, destinationDir);
     prepareMessage(TypeMessage::COMPLITE, "Копирование завершено!");
-    log += "Копирование завершено";
 }
 
 void Engine::destDirCreate()
 {
-    prepareMessage(TypeMessage::LOG, "preparing the destination folder");
+    prepareMessage(LOG, "preparing the destination folder");
 
     if(!destinationDir.exists())
     {
@@ -146,13 +132,11 @@ void Engine::createFolder(QDir _entryDir, QDir _targetDir)
 
     if(QDir(newDirPatch).exists())
     {
-        prepareMessage(TypeMessage::LOG, "Folder created: " + newDirPatch);
-        log += "Folder created: " + newDirPatch + "\n\n";
+        prepareMessage(TypeMessage::LOG, "\nFolder created: " + newDirPatch);
     }
     else
     {
         prepareMessage(TypeMessage::LOG, "!!! Folder not created!!! " + newDirPatch);
-        log += "!!! Folder not created!!! " + newDirPatch + "\n";
     }
 }
 
@@ -188,45 +172,39 @@ void Engine::listEntriesFiles(QDir _entryDir, QDir _targetDir)
     {
         int count = 0;
         bool succes = false;
-        log += "Copy file\n";
         prepareMessage(TypeMessage::LOG, "Copy file");
 
         QFile sourceFile = _entryDir.absolutePath() + "/" + entry;
         QString destFile = dest + "/" + entry;
         do
         {
-            log += "    " + sourceFile.fileName() + "\n";
-            prepareMessage(TypeMessage::LOG, "    " + sourceFile.fileName() + "\n");
+            prepareMessage(TypeMessage::LOG, "    " + sourceFile.fileName());
 
             if(sourceFile.copy(destFile))
             {
                 succes = true;
                 prepareMessage(TypeMessage::LOG, "Succes!");
-                log += "Succes!\n";
             }
             else
             {
                 prepareMessage(TypeMessage::LOG, "!!! Fail!");
                 prepareMessage(TypeMessage::LOG, sourceFile.errorString());
-                log += "Fail!\n";
 
-                 if(count < 5)
-                 {
-                     QThread::currentThread()->sleep(5);
-                     log+= "Try again!";
-                     count++;
-                 }
+                if(count < 5)
+                {
+                    QThread::currentThread()->sleep(5);
+                    count++;
+                }
             }
-            prepareMessage(TypeMessage::LOG, "\n");
-            log += "\n";
+//            prepareMessage(TypeMessage::LOG, "\n");
         } while (!succes && count < 5);
     }
 }
 
 void Engine::recive(taskMessage _recive)
 {
-    qDebug() << "Task: " << taskName << " recive message: " << _recive.name << " " << _recive.message << "Log = " << QString::number(lifeLog) << "\n";
-    prepareMessage(INFORMATION, " recived message: " + _recive.name + " " + _recive.message + " log = " + QString::number(lifeLog));
+    qDebug() << "Task: " << taskName << " recive message: " << _recive.name << " " << _recive.message << "\n";
+    prepareMessage(LOG, " recived message: " + _recive.name + " " + _recive.message);
 
     if(_recive.type == ABORT && (_recive.name == taskName || _recive.name == "all"))
     {
@@ -234,22 +212,4 @@ void Engine::recive(taskMessage _recive)
         prepareMessage(TypeMessage::ABORT, "Task: is stopped!\n");
         return;
     }
-
-    if(_recive.name == taskName && _recive.type == LOG)
-    {
-        qDebug() << taskName << " log ";
-        if(_recive.message == "on")
-        {
-            lifeLog = true;
-            qDebug() << "enabled";
-        }
-        else
-        {
-            lifeLog = false;
-            qDebug() << "disabled";
-        }
-        qDebug() << "\n";
-    }
-
-    prepareMessage(INFORMATION, "Lifelog = " + QString::number(lifeLog));
 }

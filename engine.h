@@ -26,10 +26,8 @@ class Engine : public QObject, public QRunnable
     QString dateFormat = "dd.MM.yyyy";
     QString timeFormat = "HH:mm:ss";
 
-    bool lifeLog = false;
     bool forceStop = false;
 
-    QString log; // Лог
     int copyNum; // Количество копий для простого копирования
 
 public:
@@ -37,7 +35,6 @@ public:
     Engine(QString _sourceDir, QString _destinationDir, QString _taskName, int _copyNum = 1);
     ~Engine();
 
-    void writeLog();
     void prepareMessage(const TypeMessage _type, const QString _message);
 
     void doWork();

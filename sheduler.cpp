@@ -106,16 +106,16 @@ void Sheduler::tasksUpdate()
        // Если задача прошла все условия и должна выполняться сегодня, добавляем её в спиок todayTasks
        if(todayTask)
        {
-           prepareMessage( TypeMessage::INFORMATION, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
+           prepareMessage( TypeMessage::LOG, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
 
-           taskMessage("sheduler", TypeMessage::INFORMATION, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
+           taskMessage("sheduler", TypeMessage::LOG, QString::fromStdString(i.key()) + " добавлена в список задачь на сегодня");
 
            QTime taskTime = QTime::fromString(QString::fromStdString(taskJson["time"]));
            todayTasks.insert(taskTime, QString::fromStdString(i.key()));
        }
     }
 
-    taskMessage message("sheduler", TypeMessage::INFORMATION, "\n\n---=== Задачи дня\n");
+    taskMessage message("sheduler", TypeMessage::LOG, "\n\n---=== Задачи дня\n");
 
     for(auto it = todayTasks.begin(); it != todayTasks.end(); it++)
     {
@@ -128,7 +128,7 @@ void Sheduler::tasksUpdate()
 void Sheduler::run()
 {
     qDebug() << "Sheduler is started in thread with id: " << QThread::currentThreadId() << "\n";
-    emit send(taskMessage("sheduler", TypeMessage::INFORMATION, "Sheduler is started\n"));
+    emit send(taskMessage("sheduler", TypeMessage::LOG, "Sheduler is started\n"));
     while(true)
     {
         // Если прислан сигнал остановки потока
@@ -156,7 +156,7 @@ void Sheduler::run()
     }
 
     qDebug() << "Sheduler stoped\n";
-    emit send(taskMessage("sheduler", TypeMessage::INFORMATION, "Sheduler stoped\n"));
+    emit send(taskMessage("sheduler", TypeMessage::LOG, "Sheduler stoped\n"));
     QThread::currentThread()->quit();
 }
 
@@ -200,7 +200,7 @@ void Sheduler::runTasks()
     for(auto it = tasksInWork.begin(); it != tasksInWork.end(); it++)
     {
         qDebug() << "Task " << it.key() << " starting...!!!\n";
-        prepareMessage(TypeMessage::INFORMATION, "Task " + it.key() + " starting...!!!\n");
+        prepareMessage(TypeMessage::LOG, "Task " + it.key() + " starting...!!!\n");
         json currentTask = tasks[it.key().toStdString()];
 
         QString sourcePath = QString::fromStdString(currentTask["sourcePath"]);
@@ -215,18 +215,7 @@ void Sheduler::runTasks()
         connect(task, &Engine::sendMessage, this, &Sheduler::reciveFromTask);
         connect(this, &Sheduler::send, task, &Engine::recive);
 
-        debug("Bool log = " + QString::number(log));
-
         QThreadPool::globalInstance()->start(task);
-
-        if(log)
-        {
-            prepareMessage(INFORMATION, "Try send log status to task");
-            QThread::currentThread()->sleep(1);
-            sendToTask(taskMessage(it.key(), LOG, "on"));
-        }
-
-        QThread::currentThread()->sleep(5);
     }
 }
 
@@ -245,40 +234,24 @@ void Sheduler::recive(taskMessage _recive)
 {
     QString temp = "Sheduler recive message: " + _recive.name + " " + _recive.message;
 
-    if(_recive.type == LOG)
+    // Отправить статус запрошенной задачи
+    if(isTodayTask(_recive.name) && _recive.type == STATUS)
     {
-        if(_recive.message == "on")
-        {
-            log = true;
-        }
-        else
-        {
-            log = false;
-        }
+        send(taskMessage(_recive.name, STATUS, "scheduled"));
     }
 
-//    // преадресация сообщения если задание выполняется
-//    if(tasksInWork.size() != 0 && tasksInWork.contains(_recive.name))
-//    {
-//        emit sendToTask(_recive);
-//    }
-
-    // если задача запланирована на сегодня - сообщаем об этом
-    if(isTodayTask(_recive.name) && log)
-    {
-        prepareMessage(LOG, "Task: " + _recive.name + " is scheduled today");
-    }
-
-    if(_recive.name == "all" && _recive.type == ABORT)
+    if(_recive.type == ABORT)
     {
         taskMessage("all", ABORT, "Stop signal recived!");
         emit sendToTask(_recive);
-        forceStop = true;
+
+        if(_recive.name == "all")
+        {
+            forceStop = true;
+        }
+
+        emit sendToTask(_recive);
     }
-
-    taskMessage("sheduler",TypeMessage::INFORMATION, temp);
-
-    emit sendToTask(_recive);
 }
 
 // Приём сообщения от запущеной задачи и отправка в родительское окно
@@ -292,7 +265,7 @@ void Sheduler::reciveTasks(json _tasks)
 {
     tasks = _tasks;
     tasksUpdated = true;
-    prepareMessage(TypeMessage::INFORMATION, "Task updated\n");
+    prepareMessage(TypeMessage::LOG, "Task updated\n");
 
-    taskMessage("sheduler", TypeMessage::INFORMATION, "Task updated\n");
+    taskMessage("sheduler", TypeMessage::LOG, "Task updated\n");
 }

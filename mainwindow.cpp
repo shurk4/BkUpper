@@ -4,18 +4,19 @@
 /*
  * Типы сообщений taskMessage
  *
- * лог копирования(удалил при переносе функций): - в шедулер добален метод отправки сообщений qDebug, надо получить информацию о состояния bool log
- *      mainwindow:
- *         при активном system и выделенной задаче отправляется сигнал о включении лога.
- *      engine:
- *         при получении сигнала включения лога lifeLog = true
- *         сигналы лога отсекаются в момент подготовки сообщений в prapareMessage if(lifeLog)...
+ * лог копирования(удалил при переносе функций): *
+ *  Главное окно записывает получаемые данные типа LOG в QMap log. По окончанию задания лог сохраняется в папку logs каталога с программой
+ *  !!! Больше нигде логи не обрабатываются !!!
  *
- * сохранение лога в папку с копиями(имя лога: имя задачи_log.txt)
+ * Добавить запрос и обработку статуса выбранной задачи(выполняется, выполнена сегодня и т.д.
+ * Добавить в лог время непредвиденного завершения программы и обработку этого события после перезапуска программы
+ *  (если время завершения нет или оно более раннее чем время начала)
  * добавить точки выхода из потока при копировании(при выходе сохранять лог и указывать что задача была прервана)
  * Добавить определение объёма копии
  *
  * поведение при условии хранения только одной копии
+ *
+ * переделать IF-ы на SWTCH-и
  *
  * привести в порядок MainWindow
  * сделать вывод процентов копирования и лога(если system активен)
@@ -53,6 +54,76 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// обмен данными
+void MainWindow::prepareMessage(const QString _name, const TypeMessage _type, const QString _message)
+{
+    taskMessage message(_name, _type, _message);
+    send(message);
+}
+
+void MainWindow::reciveData(JSONConverter _data)
+{
+    configData = _data;
+    configData.writeConfig();
+    extras::showTasksList(ui->listWidget, configData.getFullTasks());
+}
+
+void MainWindow::recive(taskMessage message)
+{
+    QString toLog = "";
+
+    if(configData.containTask(message.name))
+    {
+        json task = configData.getTask(message.name);
+
+        if(message.type == START) // Запись времени начала последнего выполнения задания
+        {
+            QString time = QDateTime::currentDateTime().toString(timeFormat);
+            task["lastStartTime"] = time.toStdString();
+
+            if(logs.contains(message.name)) logs[message.name].clear();
+            toLog += "Started at: " + time + "\n";
+        }
+        else if(message.type == COMPLITE) // Запись времени окончания последнего выполнения задания
+        {
+            QDateTime compliteTime = QDateTime::currentDateTime();
+            task["lastCompliteTime"] = compliteTime.toString(timeFormat).toStdString();
+            toLog += "Complited at: " + compliteTime.toString(timeFormat) + "\n";
+
+            QDateTime startTime;
+            startTime = QDateTime::fromString(QString::fromStdString(task["lastStartTime"]), timeFormat);
+
+            // Запись времени выполнения задания
+            QString execTime = extras::secondsToString(startTime.secsTo(compliteTime));
+            task["execTime"] = execTime.toStdString();
+
+            toLog += "Execution time: " + execTime + "\n";
+            toLog += "Complite status: " + message.message + "\n";
+        }
+
+        // запись количества имеющихся копий
+        if(message.type == COPIES)
+        {
+            task["currentCopiesNum"] = message.message.toInt();
+        }
+
+        configData.setTask(message.name, task);
+    }
+
+    if(message.type == LOG) // Просто лог
+    {
+        toLog += message.message + "\n";
+    }
+
+    logs[message.name] += toLog;
+
+    if(system && selectedTaskName == message.name)
+    {
+        ui->textEditLog->insertPlainText(toLog);
+    }
+}
+
+// обработка события завершения приложения и сворачивание в трей
 void MainWindow::closeEvent(QCloseEvent * event)
 {
     /* Если окно видимо и чекбокс отмечен, то завершение приложения
@@ -95,22 +166,6 @@ void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
-void MainWindow::applyConfig()
-{
-    system = configData.getConfigState("system");
-    startWithOS = configData.getConfigState("startWithOS");
-    startMinimized = configData.getConfigState("startMinimized");
-    closeToTray = configData.getConfigState("closeToTray");
-
-    lastPath = configData.getConfig("lastPath");
-
-    if(system)
-    {
-        ui->verticalWidgetSystem->show();
-    }
-    else ui->verticalWidgetSystem->hide();
-}
-
 void MainWindow::iconActivate()
 {
     /* Инициализируем иконку трея, устанавливаем иконку из набора системных иконок,
@@ -148,6 +203,23 @@ void MainWindow::iconActivate()
             this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
 }
 
+// основные функции
+void MainWindow::applyConfig()
+{
+    system = configData.getConfigState("system");
+    startWithOS = configData.getConfigState("startWithOS");
+    startMinimized = configData.getConfigState("startMinimized");
+    closeToTray = configData.getConfigState("closeToTray");
+
+    lastPath = configData.getConfig("lastPath");
+
+    if(system)
+    {
+        ui->verticalWidgetSystem->show();
+    }
+    else ui->verticalWidgetSystem->hide();
+}
+
 void MainWindow::settingWindowStart()
 {
     settingsWindow = new SettingsWindow;
@@ -166,81 +238,18 @@ void MainWindow::restartSheduler()
     if(shedulerStarted)
     {
         prepareMessage("all", ABORT, "");
-    }
-    else
-    {
-        Sheduler *sheduler = new Sheduler;
-
-        connect(sheduler, &Sheduler::send, this, &MainWindow::recive);
-        connect(this, &MainWindow::send, sheduler, &Sheduler::recive);
-        connect(this, &MainWindow::sendTasks, sheduler, &Sheduler::reciveTasks);
-
-        if(system)
-        {
-            prepareMessage(selectedTaskName, LOG, "on");
-        }
-
-        QThreadPool::globalInstance()->start(sheduler);
-        emit sendTasks(configData.getFullTasks());
-        shedulerStarted = true;
-    }
-}
-
-void MainWindow::prepareMessage(const QString _name, const TypeMessage _type, const QString _message)
-{
-    taskMessage message(_name, _type, _message);
-    send(message);
-}
-
-void MainWindow::reciveData(JSONConverter _data)
-{
-    configData = _data;
-    configData.writeConfig();
-    extras::showTasksList(ui->listWidget, configData.getFullTasks());
-}
-
-void MainWindow::recive(taskMessage message)
-{
-    if(configData.containTask(message.name))
-    {
-        json task = configData.getTask(message.name);
-
-        // Запись времени начала последнего выполнения задания
-        if(message.type == START)
-        {
-            task["lastStartTime"] = QDateTime::currentDateTime().toString(timeFormat).toStdString();
-            configData.setTask(message.name, task);
-    //        QDateTime::toTime_t(); // Время в скеундах от начала эпохи
-        }
-
-        // Запись времени окончания последнего выполнения задания
-        if(message.type == COMPLITE)
-        {
-            QDateTime compliteTime = QDateTime::currentDateTime();
-            task["lastCompliteTime"] = compliteTime.toString(timeFormat).toStdString();
-
-            QDateTime startTime;
-            startTime = QDateTime::fromString(QString::fromStdString(task["lastStartTime"]), timeFormat);
-
-            // Запись времени выполнения задания
-            QString execTime = extras::secondsToString(startTime.secsTo(compliteTime));
-            task["execTime"] = execTime.toStdString();
-
-            configData.setTask(message.name, task);
-
-            ui->textEditLog->insertPlainText(execTime + "\n");
-        }
-
-        if(message.type == COPIES)
-        {
-            task["currentCopiesNum"] = message.message.toInt();
-//            QMessageBox::information(this, "", "Recived copies numder" + message.message);
-        }
-
-        configData.setTask(message.name, task);
+        QThread::currentThread()->sleep(3);
     }
 
-    ui->textEditLog->insertPlainText(message.name + ": " + message.message + "\n");
+    Sheduler *sheduler = new Sheduler;
+
+    connect(sheduler, &Sheduler::send, this, &MainWindow::recive);
+    connect(this, &MainWindow::send, sheduler, &Sheduler::recive);
+    connect(this, &MainWindow::sendTasks, sheduler, &Sheduler::reciveTasks);
+
+    QThreadPool::globalInstance()->start(sheduler);
+    emit sendTasks(configData.getFullTasks());
+    shedulerStarted = true;
 }
 
 void MainWindow::showWindow()
@@ -248,6 +257,22 @@ void MainWindow::showWindow()
     this->show();
 }
 
+void MainWindow::showTaskLog()
+{
+    if(logs.contains(selectedTaskName) && system)
+    {
+        ui->textEditLog->clear();
+        ui->textEditLog->setText(logs[selectedTaskName]);
+        if(logScrol)
+        {
+            QTextCursor cursor = ui->textEditLog->textCursor();
+            cursor.movePosition(QTextCursor::End);
+            ui->textEditLog->setTextCursor(cursor);
+        }
+    }
+}
+
+// кнопки
 void MainWindow::on_pushButtonTasks_clicked()
 {
     TasksEditWindow *taskWindow = new TasksEditWindow;
@@ -280,25 +305,57 @@ void MainWindow::on_pushButtonClearLog_clicked()
     ui->textEditLog->clear();
 }
 
+void MainWindow::on_pushButtonSystem_clicked()
+{
+    if(system)
+    {
+        ui->verticalWidgetSystem->hide();
+        system = false;
+        configData.addConfig("system", false);
+        ui->textEditLog->clear();
+    }
+    else
+    {
+        ui->verticalWidgetSystem->show();
+        system=true;
+        configData.addConfig("system", true);
+
+        showTaskLog();
+    }
+
+    this->resize(100, 100);
+}
+
+void MainWindow::on_actionSettings_triggered()
+{
+    settingWindowStart();
+}
+
+void MainWindow::on_actionClose_triggered()
+{
+    forceClose = true;
+    close();
+}
+
+void MainWindow::on_actionTray_triggered()
+{
+    close();
+}
+
+void MainWindow::on_pushButtonShedulerRestart_clicked()
+{
+    qDebug() << "MainWindow thread id: " << QThread::currentThreadId();
+    ui->textEditLog->insertPlainText("Restart sheduler\n");
+    restartSheduler();
+}
 
 // Информация о задании по клику в списке
 void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
 {
     ui->gridWidgetTaskInfo->show();
 
-    // если открыто окно лога(system) и в списке была выбрана задача отправляем ей информацию о отключении передачи лога
-    if(system && selectedTaskName != "")
-    {
-        prepareMessage(selectedTaskName, LOG, "off");
-    }
-
     selectedTaskName = item->text();
     selectedTask = configData.getTask(selectedTaskName);
-
-    if(system)
-    {
-        prepareMessage(selectedTaskName, LOG, "on");
-    }
 
     if(selectedTask.contains("type")) ui->labelType->setText(QString::fromStdString(selectedTask["type"]));
     else ui->labelType->setText("-");
@@ -324,6 +381,13 @@ void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
         ui->labelDestPath->setText(path);
     }
     else ui->labelDestPath->setText("-");
+
+    if(selectedTask.contains("copiesNum"))
+    {
+        int copiesNum = selectedTask["copiesNum"];
+        ui->labelCopiesNum->setText(QString::number(copiesNum));
+    }
+    else ui->labelCopiesNum->setText("-");
 
     if(selectedTask.contains("lastStartTime"))ui->labelLastRun->setText(QString::fromStdString(selectedTask["lastStartTime"]));
     else ui->labelLastRun->setText("-");
@@ -366,53 +430,6 @@ void MainWindow::on_listWidget_itemClicked(QListWidgetItem *item)
         ui->labelCurrentCopiesNum->setText(QString::number(num));
     }
     else ui->labelCurrentCopiesNum->setText("-");
-}
 
-void MainWindow::on_pushButtonSystem_clicked()
-{
-    if(system)
-    {
-        ui->verticalWidgetSystem->hide();
-        system = false;
-        configData.addConfig("system", false);
-        if(selectedTaskName != "")
-        {
-            prepareMessage(selectedTaskName, LOG, "off");
-        }
-    }
-    else
-    {
-        ui->verticalWidgetSystem->show();
-        system=true;
-        configData.addConfig("system", true);
-        if(selectedTaskName != "")
-        {
-            prepareMessage(selectedTaskName, LOG, "on");
-        }
-    }
-
-    this->resize(100, 100);
-}
-
-void MainWindow::on_actionSettings_triggered()
-{
-    settingWindowStart();
-}
-
-void MainWindow::on_actionClose_triggered()
-{
-    forceClose = true;
-    close();
-}
-
-void MainWindow::on_actionTray_triggered()
-{
-    close();
-}
-
-void MainWindow::on_pushButtonShedulerRestart_clicked()
-{
-    qDebug() << "MainWindow thread id: " << QThread::currentThreadId();
-    ui->textEditLog->insertPlainText("Restart sheduler\n");
-    restartSheduler();
+    showTaskLog();
 }
