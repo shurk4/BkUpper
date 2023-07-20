@@ -44,6 +44,7 @@ public:
     void tasksUpdate(); // Составляет список задач на сегодня
     void run(); // метод действия в потоке
     void runTasks(); // Запустить задачи из списка tasksInWork
+    void debug(QString const str);
 
     bool taskReadyToRun();  // Проверяет нет ли в списке задач на сегодня задачь для запуска и составялет список taskInWorks
     bool isTodayTask(QString _name);
