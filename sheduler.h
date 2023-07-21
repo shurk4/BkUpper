@@ -36,6 +36,8 @@ class Sheduler : public QObject, public QRunnable
     QMultiMap<QTime, QString> todayTasks;
     QMultiMap<QString, QTime> tasksInWork;
 
+    QString timeFormat = "dd.MM.yyyy HH:mm:ss";
+
 public:
     Sheduler();
     ~Sheduler();

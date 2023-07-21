@@ -45,6 +45,14 @@ void TasksEditWindow::saveTask()
         {
             task["copiesNum"] = ui->lineEditCopiesNum->text().toInt();
         }
+        if(ui->checkBoxImmediately->isChecked())
+        {
+            task["immediately"] = true;
+        }
+        else
+        {
+            task["immediately"] = false;
+        }
         data.setTask(ui->lineEditTaskName->text(), task);
         data.writeConfig();
         emit sendData(data);
@@ -84,13 +92,7 @@ void TasksEditWindow::showTask(const QString _name)
     {
         QTime taskTime;
         QString stringTime = QString::fromStdString(task["time"]);
-//        QMessageBox::information(this, "", "String time: " + stringTime);
-
         taskTime = QTime::fromString(stringTime, "hh:mm");
-
-//        QMessageBox::information(this, "", "Task time: " + taskTime.toString());
-
-//        taskTime = QTime::fromString("12:34");
         ui->timeEdit->setTime(taskTime);
     }
 
@@ -113,6 +115,15 @@ void TasksEditWindow::showTask(const QString _name)
     else
     {
         ui->comboBoxType->setCurrentText("Копия");
+    }
+
+    if(!task["immediately"].empty() && bool(task["immediately"]))
+    {
+        ui->checkBoxImmediately->setChecked(true);
+    }
+    else
+    {
+        ui->checkBoxImmediately->setChecked(false);
     }
 
     if(!task["copiesNum"].empty())

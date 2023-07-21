@@ -87,7 +87,7 @@ void Engine::optimizeFolders()
 
         if(entryFolders.size() >= copyNum)
         {
-            prepareMessage(TypeMessage::LOG, "Maximum numder copies reached");
+            prepareMessage(TypeMessage::LOG, "Maximum number copies reached");
         }
 
         for(int i = entryFolders.size(); i > 0; i--)

@@ -53,7 +53,6 @@ void Sheduler::tasksUpdate()
                if(extras::dayToInt(it) == QDate::currentDate().dayOfWeek())
                {
                    todayTask = true; // Если всё ок, отмечаем что день совпадает
-                   break;
                }
            }
        }
@@ -67,13 +66,15 @@ void Sheduler::tasksUpdate()
                 if(extras::monthToInt(it) == QDate::currentDate().month() && todayTask)
                 {
                     monthTask = true; // Если всё ок, отмечаем
-                    break;
                 }
             }
 
             // Если месяц небыл отмечен, делаем todayTask = false
             if(monthTask) monthTask = false;
-            else todayTask = false;
+            else
+            {
+                continue;
+            }
        }
 
        // При единовременном выполнении просто проверить дату
@@ -81,26 +82,36 @@ void Sheduler::tasksUpdate()
        {
            QString dateString = QString::fromStdString(taskJson["date"]) + " " + QString::fromStdString(taskJson["time"]);
            QDate tempDate(QDate::fromString(dateString));
-//           emit send("Once task: " + QString::fromStdString(i.key()) + " " + tempDate.toString() + "\n");
            QDate currentDate(QDate::currentDate());
-
-//           emit send("Temp Date & time: " + tempDate.toString() + "\n");
-//           emit send("Current date & time: " + currentDate.toString() + "\n");
 
            if(tempDate.day() == currentDate.day() && tempDate.month() == currentDate.month() && tempDate.year() == currentDate.year())
            {
-//               emit send("Once task is current day task: " + QString::fromStdString(i.key()) + "\n");
+                todayTask = true;
            }
+           else continue;
        }
 
-       // Выполнялась ли сегодня текущая задача
-       if(i.value().contains("lastStartDate"))
+       // Если задача выполнялась сегодня - пропускаем
+//       if(i.value().contains("lastCompliteTime"))
+//       {
+//           QDateTime lastCompliteDate = QDateTime::fromString(QString::fromStdString(i.value()["lastCompliteTime"]), timeFormat);
+//           if(lastCompliteDate.date() == QDate::currentDate())
+//           {
+//               prepareMessage(LOG, "Task: " + QString::fromStdString(i.key()) + " is completed today.");
+//               continue;
+//           }
+//       }
+
+       // Если задача пропущена и назначена на сегодня и не отмечена как выполняемая незамедлительно - пропускаем
+       bool immediately = false;
+       if(i.value().contains("immediately"))
        {
-           QDate lastStartDate = QDate::fromString(QString::fromStdString(i.value()["lastStartDate"]));
-           if(lastStartDate.day() == QDate::currentDate().day())
-           {
-               todayTask = false;
-           }
+           immediately = i.value()["immediately"];
+       }
+
+       if(todayTask && QTime::fromString(QString::fromStdString(i.value()["time"])) < QTime::currentTime() && !immediately)
+       {
+           continue;
        }
 
        // Если задача прошла все условия и должна выполняться сегодня, добавляем её в спиок todayTasks
@@ -137,8 +148,6 @@ void Sheduler::run()
             QThread::sleep(4);
             break;
         }
-
-//        qDebug() << ".";
 
         // Если был обновлён список задач
         if(tasksUpdated)

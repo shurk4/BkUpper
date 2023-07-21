@@ -99,6 +99,9 @@ void MainWindow::recive(taskMessage message)
 
             toLog += "Execution time: " + execTime + "\n";
             toLog += "Complite status: " + message.message + "\n";
+
+            writeLog(message.name);
+            writeLog("sheduler");
         }
 
         // запись количества имеющихся копий
@@ -268,6 +271,22 @@ void MainWindow::showTaskLog()
             QTextCursor cursor = ui->textEditLog->textCursor();
             cursor.movePosition(QTextCursor::End);
             ui->textEditLog->setTextCursor(cursor);
+        }
+    }
+}
+
+void MainWindow::writeLog(const QString _name)
+{
+    QDir dir("logs");
+    if(!dir.exists()) QDir().mkdir("logs");
+
+    if(logs.contains(_name))
+    {
+        QFile file("logs/" + _name + ".log");
+        if(file.open(QIODevice::ReadWrite))
+        {
+            file.write(logs[_name].toUtf8());
+            file.close();
         }
     }
 }

@@ -65,8 +65,9 @@ public:
     void iconActivate();
     void settingWindowStart();
     void restartSheduler();
-    void prepareMessage(QString const _name, TypeMessage const _type, QString const _message);
+    void prepareMessage(const QString _name, const TypeMessage _type, const QString _message);
     void showTaskLog(); //!!!
+    void writeLog(const QString _name);
 
 protected:
     /* Виртуальная функция родительского класса в нашем классе
