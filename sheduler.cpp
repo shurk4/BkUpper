@@ -92,15 +92,15 @@ void Sheduler::tasksUpdate()
        }
 
        // Если задача выполнялась сегодня - пропускаем
-//       if(i.value().contains("lastCompliteTime"))
-//       {
-//           QDateTime lastCompliteDate = QDateTime::fromString(QString::fromStdString(i.value()["lastCompliteTime"]), timeFormat);
-//           if(lastCompliteDate.date() == QDate::currentDate())
-//           {
-//               prepareMessage(LOG, "Task: " + QString::fromStdString(i.key()) + " is completed today.");
-//               continue;
-//           }
-//       }
+       if(i.value().contains("lastCompliteTime"))
+       {
+           QDateTime lastCompliteDate = QDateTime::fromString(QString::fromStdString(i.value()["lastCompliteTime"]), timeFormat);
+           if(lastCompliteDate.date() == QDate::currentDate())
+           {
+               prepareMessage(LOG, "Task: " + QString::fromStdString(i.key()) + " is completed today.");
+               continue;
+           }
+       }
 
        // Если задача пропущена и назначена на сегодня и не отмечена как выполняемая незамедлительно - пропускаем
        bool immediately = false;
