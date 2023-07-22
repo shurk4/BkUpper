@@ -67,6 +67,7 @@ void MainWindow::reciveData(JSONConverter _data)
     configData = _data;
     configData.writeConfig();
     extras::showTasksList(ui->listWidget, configData.getFullTasks());
+//    sendData(configData);
 }
 
 void MainWindow::recive(taskMessage message)

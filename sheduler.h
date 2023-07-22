@@ -16,16 +16,6 @@
 #include "extras.h"
 #include "engine.h"
 
-//struct task
-//{
-//    QString name;
-//    TaskType taskType;
-//    QDateTime time;
-//    QString sourcePath;
-//    QString destPath;
-//    QString shedule;
-//};
-
 class Sheduler : public QObject, public QRunnable
 {
     Q_OBJECT
